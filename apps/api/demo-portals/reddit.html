@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Report a post - Redress sandbox</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; background:#ffffff; color:#1c1c1c; }
+  header { background:#ff4500; color:#fff; padding:22px 24px; }
+  header h1 { margin:0; font-size:21px; }
+  header p { margin:6px 0 0; opacity:.9; font-size:13px; }
+  main { max-width:620px; margin:26px auto 60px; border:1px solid #e8e8e8; border-radius:12px; padding:26px; }
+  label { display:block; font-size:13px; font-weight:600; margin:15px 0 6px; }
+  label span.req { color:#b91c1c; }
+  input[type=text], select, textarea { width:100%; padding:10px 12px; border:1px solid #dcdcdc; border-radius:8px; font-size:14px; font-family:inherit; }
+  textarea { min-height:120px; resize:vertical; }
+  .hint { font-size:12px; color:#7c7c7c; margin-top:5px; }
+  button { margin-top:22px; background:#ff4500; color:#fff; border:0; border-radius:999px; padding:11px 26px; font-size:15px; font-weight:600; cursor:pointer; }
+  .confirmation { display:none; margin-top:20px; padding:18px; border-radius:8px; background:#ecfdf5; border:1px solid #6ee7b7; }
+  .confirmation h2 { margin:0 0 6px; color:#065f46; }
+  .ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight:700; font-size:19px; color:#065f46; }
+  .tag { display:inline-block; background:#fff7ed; color:#b35c00; border:1px solid #fdba74; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Report a post or comment</h1>
+  <p>Community reports are reviewed by moderators</p>
+</header>
+<main>
+  <p><span class="tag">REDRESS SANDBOX</span> Local clone for the demo. Nothing is transmitted.</p>
+  <form id="reportForm" method="post" action="/demo-portals/reddit.html">
+    <label for="post_url">Link to the post or comment <span class="req">*</span></label>
+    <input type="text" id="post_url" name="post_url" placeholder="https://…" />
+
+    <label for="category">What is the problem? <span class="req">*</span></label>
+    <select id="category" name="category">
+      <option value="">Select a reason</option>
+      <option value="Spam">Spam</option>
+      <option value="Harassment">Harassment</option>
+      <option value="Hate">Hate</option>
+      <option value="Impersonation">Impersonation</option>
+      <option value="Scam">Scam</option>
+      <option value="Sexual content involving minors">Sexual content involving minors</option>
+    </select>
+
+    <label for="details">Additional details <span class="req">*</span></label>
+    <textarea id="details" name="details" placeholder="Explain what happened."></textarea>
+
+    <button type="submit" id="submitBtn">Submit report</button>
+  </form>
+
+  <div class="confirmation" id="confirmation">
+    <h2>Report received</h2>
+    <p>Moderators will review the post. Your reference:</p>
+    <p class="ref" id="reference">RDT-2026-000000</p>
+  </div>
+</main>
+<script>
+  document.getElementById('reportForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ref = 'RDT-2026-' + String(Math.floor(100000 + Math.random() * 899999));
+    document.getElementById('reference').textContent = ref;
+    document.getElementById('confirmation').style.display = 'block';
+    document.getElementById('reportForm').style.display = 'none';
+    document.title = 'Report received - ' + ref;
+  });
+</script>
+</body>
+</html>

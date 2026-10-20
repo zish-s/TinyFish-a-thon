@@ -1,0 +1,26 @@
+{
+  "name": "@redress/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.1",
+    "@fastify/static": "^10.1.6",
+    "@redress/core": "*",
+    "@tiny-fish/sdk": "^0.8.0",
+    "fastify": "^5.12.7",
+    "pdfkit": "^0.20.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/pdfkit": "^0.13.9",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0"
+  }
+}
