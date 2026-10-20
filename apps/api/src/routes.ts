@@ -306,6 +306,114 @@ export async function registerRoutes(app: FastifyInstance) {
     return { channel, caseFile: getCase(id) };
   });
 
+  /* ------------------------------------------------------ transcription */
+  /**
+   * Voice input, arranged around TinyFish.
+   *
+   * The microphone has to be the *user's* - a cloud browser cannot reach it.
+   * So the browser records locally, and the TinyFish agent does the rest: it
+   * opens the transcription page, uploads the recording through the page's own
+   * file field, and reads the transcript back out of the page.
+   */
+  const recordings = new Map<string, { name: string; type: string; data: Buffer }>();
+  let recordingSeq = 0;
+
+  app.get('/api/audio/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const rec = recordings.get(id);
+    if (!rec) {
+      reply.code(404);
+      return reply.send({ error: 'recording not found' });
+    }
+    reply.header('Content-Type', rec.type || 'audio/webm');
+    return reply.send(rec.data);
+  });
+
+  /**
+   * The transcription page calls this with the file it received. If an
+   * OpenAI-compatible speech endpoint is configured we use it; otherwise we
+   * say so plainly rather than returning a fake transcript.
+   */
+  app.post('/api/stt', async (request, reply) => {
+    const file = (request as any).file as { filename: string; mimetype: string; buffer: Buffer } | undefined;
+    if (!file) {
+      reply.code(400);
+      return reply.send({ error: 'no file' });
+    }
+    if (!config.llm.key) {
+      return reply.send({
+        transcript: '',
+        error:
+          'No speech-to-text service is configured for this deployment. Set LLM_API_KEY and LLM_BASE_URL to an OpenAI-compatible endpoint that supports /audio/transcriptions (for example Groq with whisper-large-v3).',
+      });
+    }
+    try {
+      const form = new FormData();
+      form.append('file', new Blob([file.buffer], { type: file.mimetype }), file.filename);
+      form.append('model', process.env.STT_MODEL ?? 'whisper-large-v3');
+      const res = await fetch(`${config.llm.baseUrl.replace(/\/$/, '')}/audio/transcriptions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${config.llm.key}` },
+        body: form,
+      });
+      const json = (await res.json()) as { text?: string; error?: { message?: string } };
+      if (!res.ok) return reply.send({ transcript: '', error: json.error?.message ?? `HTTP ${res.status}` });
+      return reply.send({ transcript: (json.text ?? '').trim() });
+    } catch (err) {
+      return reply.send({ transcript: '', error: (err as Error).message });
+    }
+  });
+
+  app.post('/api/transcribe', async (request, reply) => {
+    const file = (request as any).file as { filename: string; mimetype: string; buffer: Buffer } | undefined;
+    if (!file) {
+      reply.code(400);
+      return reply.send({ error: 'no audio file received' });
+    }
+
+    const id = `rec-${Date.now()}-${++recordingSeq}`;
+    recordings.set(id, { name: file.filename, type: file.mimetype, data: file.buffer });
+
+    const base = publicBaseUrl(request);
+    const audioUrl = `${base}/api/audio/${id}`;
+    const page = `${base}/demo-portals/transcribe.html?src=${encodeURIComponent(audioUrl)}`;
+
+    const goal = [
+      'Transcribe an audio recording.',
+      `1. Open ${page}`,
+      '   The page fetches the recording itself and starts transcribing.',
+      '2. Wait for the text box below the buttons to fill in.',
+      '3. Read that text out of the text box and return it as the transcript.',
+      'If the text box shows an error instead of a transcript, return that error text as the transcript.',
+    ].join('\n');
+
+    try {
+      const final = await tf.runAgent(() => undefined, {
+        url: page,
+        goal,
+        outputSchema: {
+          type: 'object',
+          properties: {
+            transcript: { type: 'string' },
+            error: { type: 'string', nullable: true },
+          },
+          required: ['transcript'],
+        },
+        maxDurationSeconds: 180,
+      });
+      const result = (final.result ?? {}) as { transcript?: string; error?: string | null };
+      recordings.delete(id);
+      return reply.send({
+        transcript: (result.transcript ?? '').trim(),
+        error: result.error ?? null,
+        via: 'tinyfish-agent',
+      });
+    } catch (err) {
+      recordings.delete(id);
+      return reply.send({ transcript: '', error: (err as Error).message, via: 'tinyfish-agent' });
+    }
+  });
+
   /* ------------------------------------------------------------- catalogue */
   app.get('/api/catalogue', async () => ({
     incidentTypes: INCIDENT_TYPES,

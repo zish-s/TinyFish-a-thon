@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
+import multipart from '@fastify/multipart';
 import { registerRoutes } from './routes.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   await app.register(cors, { origin: true, credentials: true });
+  await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });
 
   // Be forgiving about request bodies: a POST with no body, or a body sent
   // without a content-type, must not fail the request.

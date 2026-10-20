@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.3.1",
+    "@fastify/multipart": "^10.1.4",
     "@fastify/static": "^10.1.6",
     "@reclaim/core": "*",
     "@tiny-fish/sdk": "^0.8.0",

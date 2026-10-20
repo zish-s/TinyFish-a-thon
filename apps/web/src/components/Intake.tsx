@@ -31,8 +31,11 @@ export function Intake({
   const [country, setCountry] = useState('IN');
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     const w = window as any;
@@ -75,6 +78,53 @@ export function Intake({
   const micSupported =
     typeof window !== 'undefined' &&
     Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
+  /** Record locally, then let a TinyFish agent transcribe the file. */
+  const toggleRecord = async () => {
+    if (recorderRef.current) {
+      recorderRef.current.stop();
+      recorderRef.current = null;
+      setListening(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        setVoiceBusy(true);
+        setVoiceError(null);
+        try {
+          const form = new FormData();
+          form.append('audio', blob, 'recording.webm');
+          const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+          const json = await res.json();
+          if (json.transcript) {
+            setText((prev) => `${prev}${prev ? ' ' : ''}${json.transcript}`);
+          } else {
+            setVoiceError(json.error ?? 'We could not transcribe that recording. Try typing instead.');
+          }
+        } catch (err) {
+          setVoiceError(`Recording failed: ${(err as Error).message}`);
+        } finally {
+          setVoiceBusy(false);
+        }
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setListening(true);
+    } catch {
+      setVoiceError('We could not use the microphone. Allow it in the address bar, or just type instead.');
+    }
+  };
+
+  const canRecord =
+    typeof window !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== 'undefined';
 
   const submit = () => {
     if (text.trim().length < 8) return;
@@ -132,6 +182,17 @@ export function Intake({
               <button type="button" className="btn-primary" disabled={busy || text.trim().length < 8} onClick={submit}>
                 {busy ? 'Working...' : 'Find where to report this'}
               </button>
+
+              {canRecord && (
+                <button
+                  type="button"
+                  onClick={toggleRecord}
+                  className={listening ? 'btn-primary' : 'btn-outline'}
+                  disabled={voiceBusy}
+                >
+                  {voiceBusy ? 'Transcribing...' : listening ? 'Stop recording' : 'Record a voice note'}
+                </button>
+              )}
 
               {micSupported && (
                 <button

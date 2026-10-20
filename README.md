@@ -284,6 +284,36 @@ deployment.
 
 ---
 
+## Voice input, arranged around TinyFish
+
+TinyFish has no speech-to-text endpoint - its five surfaces (Agent, Research,
+Search, Fetch, Browser) are all about the web. But the **Agent can drive any
+website**, so voice input is arranged like this:
+
+```
+browser records the microphone locally (MediaRecorder)
+   -> POST /api/transcribe  (the file never leaves your machine except for this call)
+   -> our API holds it in memory and serves it at a temporary URL
+   -> a TinyFish agent opens the transcription page, uploads the recording
+      through the page's own file field, waits, and reads the transcript back
+   -> the text lands in the question box
+```
+
+The microphone has to be *yours* - a cloud browser cannot reach it - which is
+why the capture is local and only the transcription is delegated.
+
+**The honest caveat:** Chrome's built-in *Dictate* button sends your audio to
+Google, so it is not local. The **Record a voice note** button is the one that
+keeps the audio in the app until TinyFish transcribes it.
+
+The transcription step needs a speech-to-text service. Point `LLM_API_KEY` and
+`LLM_BASE_URL` at any OpenAI-compatible endpoint that serves
+`/audio/transcriptions` - Groq with `whisper-large-v3` is the quickest - and set
+`STT_MODEL`. With no key configured, the button says so plainly instead of
+failing silently.
+
+---
+
 ## Business model
 
 Free for victims, paid for the organisations that receive the reports.
