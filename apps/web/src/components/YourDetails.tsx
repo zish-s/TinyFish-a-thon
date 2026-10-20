@@ -48,35 +48,42 @@ export function YourDetails({
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {(
             [
-              ['name', 'Name'],
-              ['email', 'Email'],
-              ['phone', 'Mobile'],
-              ['city', 'City'],
-              ['address', 'Address'],
+              ['name', 'Name', 'Needs to match your ID'],
+              ['email', 'Email', 'Either this or your mobile - one is enough'],
+              ['phone', 'Mobile', 'Either this or your email - one is enough'],
+              ['city', 'City', 'Picks your police station'],
+              ['address', 'Address', 'Only if a form asks for it'],
             ] as const
-          ).map(([key, label]) => (
+          ).map(([key, label, hint]) => (
             <label key={key} className={`block ${key === 'address' ? 'sm:col-span-2' : ''}`}>
               <span className="mb-1.5 block text-xs font-semibold text-muted">{label}</span>
               <input
                 className="input !py-2.5 !text-sm"
+                placeholder={hint}
                 value={draft[key] ?? ''}
                 onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
               />
+              <span className="mt-1 block text-[11.5px] text-muted-faint">{hint}</span>
             </label>
           ))}
         </div>
       ) : filled.length ? (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {filled.map(([key, value]) => (
             <Tag key={key} tone="neutral">
               {value}
             </Tag>
           ))}
+          <button type="button" className="btn-quiet !px-2 !py-0.5 !text-[12px]" onClick={() => setEditing(true)}>
+            Edit
+          </button>
         </div>
       ) : (
         <p className="mt-4 text-[13.5px] leading-relaxed text-muted">
-          You have not added any yet. Without them the police and the bank cannot call you back, and most portals need
-          at least a name and a mobile number. Press <span className="font-semibold text-ink">Edit</span> to add them.
+          You have not added any yet. Most forms need at least a name, and <span className="font-semibold text-ink">
+            a mobile number or an email - one of the two is enough
+          </span>
+          . Press <span className="font-semibold text-ink">Edit</span> to add them.
         </p>
       )}
     </div>

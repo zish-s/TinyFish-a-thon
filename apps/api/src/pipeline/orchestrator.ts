@@ -512,7 +512,7 @@ export async function fileChannel(
     .join('\n');
 
   const fillGoal = [
-    `You are filing a report for a victim who has already reviewed and approved every value below.`,
+    `You are filing a report for a victim who has already reviewed and approved the values below.`,
     ``,
     `Start page: ${targetUrl}`,
     ``,
@@ -522,8 +522,13 @@ export async function fileChannel(
     ``,
     `Rules:`,
     `- Use the exact strings given. Do not paraphrase, do not reformat, do not add text of your own.`,
-    `- If a field from the list is not on the page, skip it and list it under missing.`,
-    `- If a required field on the page has no value, DO NOT guess. Leave it empty and list it under missing.`,
+    `- Fill EVERY field you can, even if other fields will end up empty. A partly filled form is far better than an empty one,`,
+    `  and you must not stop just because something is missing.`,
+    `- If a field is not on the page, skip it and list it under missing.`,
+    `- If the form marks a field as required and you have no value for it, leave that one empty and list it under missing.`,
+    `  Only those are the ones the victim must supply - everything else you should still fill in.`,
+    `- A contact field (email, mobile, phone) that you could not fill does NOT need the victim, as long as you filled`,
+    `  another contact field on the same form. Leave the empty one blank, do not list it as missing, and mention it in notes.`,
     `- Do NOT click Submit, Send, File, Report or any final confirmation button. Stop once the form is filled.`,
     `- Return JSON matching the requested schema.`,
   ].join('\n');
@@ -552,9 +557,10 @@ export async function fileChannel(
 
     if (fillResult?.missing?.length) {
       const stillMissing = new Set([...missing.map((m) => m.label), ...fillResult.missing]);
-      channel.error = `Waiting on you: ${[...stillMissing].join(', ')}`;
+      channel.error = `The agent filled everything it could. Only the field${stillMissing.size === 1 ? '' : 's'} the form marks as required still need${stillMissing.size === 1 ? 's' : ''} you: ${[...stillMissing].join(', ')}`;
       channel.status = 'ready';
     } else {
+      channel.error = undefined;
       channel.status = 'ready';
     }
 

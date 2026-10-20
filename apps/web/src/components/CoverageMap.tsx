@@ -132,7 +132,11 @@ export function CoverageMap({
                           <Tag tone={status.tone}>{status.label}</Tag>
                           {channel.priority === 'later' && <Tag tone="lilac">later</Tag>}
                           {channel.reference && <Tag tone="mint">{channel.reference}</Tag>}
-                          {missing.length > 0 && <Tag tone="butter">{missing.length} to fill</Tag>}
+                          {missing.length > 0 && (
+                            <Tag tone="butter">
+                              {missing.length} to confirm
+                            </Tag>
+                          )}
                         </div>
                         <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{channel.why}</p>
                         {host ? (

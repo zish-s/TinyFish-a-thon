@@ -154,39 +154,23 @@ export default function App() {
               </span>
             )}
             {caseFile && (
-              <label className="flex cursor-pointer items-center gap-2 text-[12px] text-muted">
+              <label
+                className="flex cursor-pointer items-center gap-2 text-[12px] text-muted"
+                title="The real report forms on Instagram, X and the banks all need a login, so the agent cannot fill them. In practice mode it fills a copy of each form instead, so you can see the whole flow."
+              >
                 <input
                   type="checkbox"
                   checked={sandbox}
                   onChange={(e) => setSandbox(e.target.checked)}
                   className="h-3.5 w-3.5 accent-coral-500"
                 />
-                demo forms
+                Practice mode
               </label>
             )}
             {caseFile ? (
-              <div className="flex items-center gap-2">
-                <Tag tone="coral">status: {caseFile.status}</Tag>
-                <button
-                  type="button"
-                  className="btn-quiet !px-2.5 !py-1.5 !text-[12.5px]"
-                  onClick={async () => {
-                    await api.deleteCase(caseFile.id);
-                    reset();
-                  }}
-                >
-                  Delete this report
-                </button>
-                <button
-                  type="button"
-                  className="btn-outline !py-1.5"
-                  onClick={() => {
-                    reset();
-                  }}
-                >
-                  New report
-                </button>
-              </div>
+              <button type="button" className="btn-outline !py-1.5" onClick={reset}>
+                New report
+              </button>
             ) : null}
           </div>
         </div>
@@ -206,6 +190,14 @@ export default function App() {
                 {laterCount > 0 && `, and ${laterCount} more you can arm afterwards`}. Open one, let the agent read the
                 real form, check what it will type, and then approve it.
               </p>
+              {sandbox && (
+                <p className="mt-3 inline-flex items-start gap-2 rounded-2xl border border-lilac-300/70 bg-lilac-50/70 px-4 py-2.5 text-[13px] leading-relaxed text-ink-soft">
+                  <span className="font-semibold text-ink">Practice mode is on.</span> The real report forms on Instagram,
+                  X and the banks all ask you to log in, so the agent cannot fill them. Here it fills a copy of each
+                  form instead - same fields, same flow, nothing sent anywhere. Turn it off to see the real portals
+                  being found and open them yourself.
+                </p>
+              )}
               {caseFile.incident.urgency !== 'normal' && (
                 <div
                   className={`mt-5 rounded-3xl border p-5 ${
