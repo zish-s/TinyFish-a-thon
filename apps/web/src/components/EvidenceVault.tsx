@@ -1,4 +1,4 @@
-import type { EvidenceItem, MonitorBinding } from '@reclaim/core';
+import type { CaseFile, EvidenceItem, MonitorBinding } from '@reclaim/core';
 import { SectionTitle, Tag } from './ui';
 import { api } from '../lib/api';
 
@@ -6,12 +6,14 @@ export function EvidenceVault({
   evidence,
   monitors,
   caseId,
+  currentCase,
   onArm,
   armed,
 }: {
   evidence: EvidenceItem[];
   monitors: MonitorBinding[];
   caseId: string;
+  currentCase: CaseFile;
   onArm: () => void;
   armed: boolean;
 }) {
@@ -22,9 +24,13 @@ export function EvidenceVault({
           eyebrow="Proof"
           title="Your evidence"
           action={
-            <a href={api.caseFileUrl(caseId)} className="btn-outline" target="_blank" rel="noreferrer">
+            <button
+              type="button"
+              className="btn-outline"
+              onClick={() => api.downloadCaseFile(caseId, currentCase).catch(() => undefined)}
+            >
               Download case file
-            </a>
+            </button>
           }
         />
         {evidence.length === 0 ? (

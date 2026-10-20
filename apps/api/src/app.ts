@@ -44,8 +44,14 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerRoutes(app);
 
   app.setErrorHandler((error, request, reply) => {
+    const err = error as { statusCode?: number; message?: string; stack?: string; name?: string; issues?: unknown };
+    // A validation failure is the caller's problem, not ours.
+    if (err.name === 'ZodError' || Array.isArray(err.issues)) {
+      request.log.warn({ err: error }, 'invalid request');
+      reply.code(400);
+      return { error: 'That request was not valid. Check the field and try again.' };
+    }
     request.log.error({ err: error }, 'request failed');
-    const err = error as { statusCode?: number; message?: string; stack?: string };
     const status = err.statusCode && err.statusCode >= 400 && err.statusCode < 600 ? err.statusCode : 500;
     reply.code(status);
     return {

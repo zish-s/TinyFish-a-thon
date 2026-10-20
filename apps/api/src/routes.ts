@@ -549,16 +549,24 @@ export async function registerRoutes(app: FastifyInstance) {
   });
 
   /* ------------------------------------------------------------- case file */
-  app.get('/api/casefile', async (request, reply) => {
-    const { id } = request.query as { id?: string };
-    const caseFile = id ? getCase(id) : null;
+  /**
+   * The case travels with the request. On a serverless platform the case may
+   * live on a different instance by now, and the PDF must not be the thing
+   * that breaks at the end of the demo.
+   */
+  app.post('/api/casefile', async (request, reply) => {
+    const body = z.object({ id: z.string().optional(), case: z.any().optional() }).parse(request.body ?? {});
+    const caseFile = (body.case as CaseFile | undefined) ?? (body.id ? getCase(body.id) : null);
     if (!caseFile) {
       reply.code(404);
       return reply.send({ error: 'case not found' });
     }
-    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(id!));
+    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(caseFile.id));
     reply.header('Content-Type', 'application/pdf');
-    reply.header('Content-Disposition', `attachment; filename="reclaim-your-net-case-${id!.slice(0, 8)}.pdf"`);
+    reply.header(
+      'Content-Disposition',
+      `attachment; filename="reclaim-your-net-case-${caseFile.id.slice(0, 8)}.pdf"`,
+    );
     return reply.send(pdf);
   });
 

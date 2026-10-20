@@ -8,23 +8,28 @@ const EXAMPLES = [
   {
     tag: 'Impersonation + fraud',
     text: 'Someone made a fake Instagram account at https://instagram.com/rahul.finance.2024 using my photo and my college ID, and is asking my friends to send me 500 rupees as a gift. They also posted my phone number on the page.',
+    profile: { name: 'Ishita Sharma', email: 'ishita@example.com', phone: '+91 98765 43210', city: 'Gurugram' },
   },
   {
     tag: 'Morphed intimate image',
     text: 'A stranger on Instagram sent me my own photo edited into a sexual video and is now threatening to post it to my family unless I pay him 20000 rupees. He is a man in his twenties.',
+    profile: { name: 'Aarohi', email: 'aarohi@example.com', phone: '+91 90000 11111', city: 'Mumbai' },
   },
   {
     tag: 'Doxxing + stalking',
     text: 'A man posted my home address and my family details on a public Facebook group, and he keeps waiting outside my apartment at night. I am scared to go to college.',
+    profile: { name: 'Ravi K', email: 'ravi@example.com', phone: '+91 88888 22222', city: 'Bengaluru' },
   },
 ];
 
 export function Intake({
   onSubmit,
   busy,
+  error,
 }: {
   onSubmit: (text: string, profile: Profile, country: string) => void;
   busy: boolean;
+  error: string | null;
 }) {
   const [text, setText] = useState('');
   const [profile, setProfile] = useState<Profile>({});
@@ -173,6 +178,12 @@ export function Intake({
               </p>
             )}
 
+            {error && (
+              <p className="mt-3 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-[13px] font-medium text-[#A63A56]">
+                {error}
+              </p>
+            )}
+
             {showDetails && (
               <div className="mt-5 grid gap-3 border-t border-ink/10 pt-5 sm:grid-cols-2">
                 {(
@@ -212,7 +223,13 @@ export function Intake({
               <button
                 key={ex.tag}
                 type="button"
-                onClick={() => setText(ex.text)}
+                onClick={() => {
+                  setText(ex.text);
+                  // Fill the details too, so the city-aware routing is visible
+                  // straight away. Never overwrite what the person typed.
+                  setProfile((p) => ({ ...ex.profile, ...p }));
+                  setShowDetails(true);
+                }}
                 className="rounded-full border border-white/80 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-muted transition hover:border-coral-300 hover:bg-white hover:text-coral-700"
               >
                 {ex.tag}

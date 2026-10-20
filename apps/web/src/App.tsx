@@ -17,6 +17,7 @@ export default function App() {
   const [monitors, setMonitors] = useState<any[]>([]);
   const [monitorsArmed, setMonitorsArmed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [busyChannel, setBusyChannel] = useState<string | null>(null);
   const [sandbox, setSandbox] = useState(true);
   const [health, setHealth] = useState<any>(null);
@@ -56,6 +57,7 @@ export default function App() {
 
   const startCase = async (text: string, profile: Profile, country: string) => {
     setBusy(true);
+    setSubmitError(null);
     setLogs([]);
     setSteps([]);
     setMonitors([]);
@@ -65,11 +67,17 @@ export default function App() {
       setCaseFile(created);
       await runAction((c) => api.discover(created.id, sandbox, c, handleEvent), created);
     } catch (err) {
+      const message = (err as Error).message || 'Something went wrong.';
+      setSubmitError(
+        message.includes('valid')
+          ? 'Please describe what happened in a little more detail.'
+          : `We could not start the report: ${message}`,
+      );
       setLogs([
         {
           type: 'log',
           level: 'error',
-          message: `Could not start the case: ${(err as Error).message}`,
+          message: `Could not start the case: ${message}`,
           ts: new Date().toISOString(),
         },
       ]);
@@ -185,7 +193,7 @@ export default function App() {
 
       <main className="flex-1">
         {!caseFile ? (
-          <Intake onSubmit={startCase} busy={busy} />
+          <Intake onSubmit={startCase} busy={busy} error={submitError} />
         ) : (
           <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
             <div className="mb-10">
@@ -306,6 +314,7 @@ export default function App() {
                 evidence={caseFile.evidence}
                 monitors={monitors}
                 caseId={caseFile.id}
+                currentCase={caseFile}
                 armed={monitorsArmed}
                 onArm={async () => {
                   await api.armMonitors(caseFile.id, caseFile, handleEvent);

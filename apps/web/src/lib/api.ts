@@ -138,6 +138,25 @@ export const api = {
 
   caseFileUrl: (id: string) => `/api/casefile?id=${encodeURIComponent(id)}`,
 
+  /** Downloads the case file. The case travels with the request. */
+  downloadCaseFile: async (id: string, current: CaseFile) => {
+    const res = await fetch('/api/casefile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, case: current }),
+    });
+    if (!res.ok) throw new Error(`Could not build the case file (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reclaim-your-net-case-${id.slice(0, 8)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
   health: () => fetch('/api/health').then((r) => json<any>(r)),
   pricing: () => fetch('/api/pricing').then((r) => json<any>(r)),
 };
