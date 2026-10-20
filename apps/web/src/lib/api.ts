@@ -78,6 +78,16 @@ export async function streamAction(
   }
 }
 
+/** Runs a quick action and returns the updated case from the stream. */
+async function runAndCollect(body: Record<string, unknown>): Promise<CaseFile> {
+  let updated: CaseFile | undefined;
+  await streamAction('/api/action', body, (event) => {
+    if (event.type === 'case') updated = event.caseFile;
+  });
+  if (!updated) throw new Error('The server did not return the updated report');
+  return updated;
+}
+
 export const api = {
   createCase: (text: string, profile: Profile, country: string) =>
     fetch('/api/cases', {
@@ -91,11 +101,20 @@ export const api = {
 
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<{ caseFile: CaseFile; monitors: MonitorBinding[] }>(r)),
 
+  /**
+   * One endpoint for every action, streamed. The action and its arguments
+   * travel in the body, and the run's events come back on the same connection.
+   */
+  action: (
+    body: Record<string, unknown>,
+    onEvent: (event: CaseEvent) => void,
+  ) => streamAction('/api/action', body, onEvent),
+
   discover: (id: string, sandbox: boolean, current: CaseFile, onEvent: (e: CaseEvent) => void) =>
-    streamAction(`/api/cases/${id}/discover`, { sandbox, case: current }, onEvent),
+    streamAction('/api/action', { action: 'discover', id, sandbox, case: current }, onEvent),
 
   analyse: (id: string, channelId: string, current: CaseFile, onEvent: (e: CaseEvent) => void) =>
-    streamAction(`/api/cases/${id}/channels/${channelId}/analyse`, { case: current }, onEvent),
+    streamAction('/api/action', { action: 'analyse', id, channelId, case: current }, onEvent),
 
   file: (
     id: string,
@@ -103,31 +122,21 @@ export const api = {
     submit: boolean,
     current: CaseFile,
     onEvent: (e: CaseEvent) => void,
-  ) => streamAction(`/api/cases/${id}/channels/${channelId}/file`, { submit, case: current }, onEvent),
+  ) => streamAction('/api/action', { action: 'file', id, channelId, submit, case: current }, onEvent),
 
   armMonitors: (id: string, current: CaseFile, onEvent: (e: CaseEvent) => void) =>
-    streamAction(`/api/cases/${id}/monitors`, { case: current }, onEvent),
+    streamAction('/api/action', { action: 'monitors', id, case: current }, onEvent),
 
   updateDetails: (id: string, profile: Profile, current: CaseFile) =>
-    fetch(`/api/cases/${id}/details`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...profile, case: current }),
-    }).then((r) => json<{ caseFile: CaseFile }>(r)),
+    runAndCollect({ action: 'details', id, profile, case: current }),
 
   updateFields: (id: string, channelId: string, values: Record<string, string>, current: CaseFile) =>
-    fetch(`/api/cases/${id}/channels/${channelId}/fields`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values, case: current }),
-    }).then((r) => json<{ channel: Channel; caseFile: CaseFile }>(r)),
+    runAndCollect({ action: 'fields', id, channelId, values, case: current }),
 
   skip: (id: string, channelId: string, current: CaseFile) =>
-    fetch(`/api/cases/${id}/channels/${channelId}/skip`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ case: current }),
-    }).then((r) => json<{ ok: boolean; caseFile: CaseFile }>(r)),
+    runAndCollect({ action: 'skip', id, channelId, case: current }),
+
+  caseFileUrl: (id: string) => `/api/casefile?id=${encodeURIComponent(id)}`,
 
   health: () => fetch('/api/health').then((r) => json<any>(r)),
   pricing: () => fetch('/api/pricing').then((r) => json<any>(r)),

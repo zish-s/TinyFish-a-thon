@@ -125,6 +125,11 @@ export function isEphemeral(id: string): boolean {
   return ephemeral.has(id);
 }
 
+/** Takes the client's copy of a case as the working copy for this instance. */
+export function adoptCase(caseFile: CaseFile) {
+  cache.set(caseFile.id, caseFile);
+}
+
 export function updateCase(caseFile: CaseFile) {
   const now = new Date().toISOString();
   caseFile.updatedAt = now;

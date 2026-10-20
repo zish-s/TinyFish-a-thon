@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { INCIDENT_TYPES, PLATFORM_CHANNELS, AUTHORITY_CHANNELS, PROTECTION_CHANNELS, EMERGENCY_BY_COUNTRY, triage } from '@reclaim/core';
+import { INCIDENT_TYPES, PLATFORM_CHANNELS, AUTHORITY_CHANNELS, PROTECTION_CHANNELS, EMERGENCY_BY_COUNTRY, triage, type CaseFile } from '@reclaim/core';
 import { bus, type CaseEvent } from './bus.js';
 import { config, hasPublicTunnel, hasTinyFish } from './env.js';
 import { getCase, listCases, deleteCase } from './store.js';
@@ -469,6 +469,97 @@ export async function registerRoutes(app: FastifyInstance) {
       recordings.delete(id);
       return reply.send({ transcript: '', error: (err as Error).message, via: 'tinyfish-agent' });
     }
+  });
+
+  /**
+   * Every mutating action goes through this one route.
+   *
+   * It is a single path segment on purpose: a serverless platform routes
+   * `/api/action` reliably, while deep paths depend on how the platform
+   * handles catch-all functions. The action and its arguments travel in the
+   * body, and the whole run is streamed back on the same connection.
+   */
+  app.post('/api/action', async (request, reply) => {
+    const body = z
+      .object({
+        action: z.enum(['discover', 'analyse', 'file', 'monitors', 'details', 'fields', 'skip']),
+        id: z.string(),
+        channelId: z.string().optional(),
+        sandbox: z.boolean().optional(),
+        submit: z.boolean().optional(),
+        values: z.record(z.string(), z.string()).optional(),
+        profile: z
+          .object({
+            name: z.string().optional(),
+            email: z.string().optional(),
+            phone: z.string().optional(),
+            address: z.string().optional(),
+            city: z.string().optional(),
+          })
+          .optional(),
+        case: z.any().optional(),
+      })
+      .parse(request.body ?? {});
+
+    const { id, action, channelId } = body;
+    const send = openStream(reply);
+    const unsubscribe = bus.subscribe(id, (event) => send(event));
+
+    try {
+      let updated: CaseFile | undefined;
+      switch (action) {
+        case 'discover':
+          updated = await orch.discoverChannels(id, Boolean(body.sandbox), publicBaseUrl(request), body.case);
+          break;
+        case 'analyse':
+          await orch.analyseChannel(id, channelId!, publicBaseUrl(request), body.case);
+          updated = orch.resolveCaseFor(id, body.case);
+          break;
+        case 'file':
+          await orch.fileChannel(
+            id,
+            channelId!,
+            { submit: Boolean(body.submit), values: body.values },
+            publicBaseUrl(request),
+            body.case,
+          );
+          updated = orch.resolveCaseFor(id, body.case);
+          break;
+        case 'monitors':
+          updated = await orch.armMonitors(id, Boolean(body.sandbox), body.case);
+          break;
+        case 'details':
+          updated = orch.updateDetails(id, body.profile ?? {}, body.case);
+          break;
+        case 'fields':
+          orch.updateChannelFields(id, channelId!, body.values ?? {}, body.case);
+          updated = orch.resolveCaseFor(id, body.case);
+          break;        case 'skip':
+          orch.skipChannel(id, channelId!, body.case);
+          updated = orch.resolveCaseFor(id, body.case);
+          break;
+      }
+      if (updated) send({ type: 'case', caseFile: updated });
+    } catch (err) {
+      send({ type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() });
+    } finally {
+      unsubscribe();
+      reply.raw.end();
+    }
+  });
+
+  /* ------------------------------------------------------------- case file */
+  app.get('/api/casefile', async (request, reply) => {
+    const { id } = request.query as { id?: string };
+    const caseFile = id ? getCase(id) : null;
+    if (!caseFile) {
+      reply.code(404);
+      return reply.send({ error: 'case not found' });
+    }
+    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(id!));
+    reply.header('Content-Type', 'application/pdf');
+    reply.header('Content-Disposition', `attachment; filename="reclaim-your-net-case-${id!.slice(0, 8)}.pdf"`);
+    return reply.send(pdf);
   });
 
   /* ------------------------------------------------------------- catalogue */

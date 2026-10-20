@@ -116,61 +116,65 @@ function valueForField(
   profile: ReporterProfile,
   narrative: string,
 ): string {
-  const lower = field.name.toLowerCase();
-  if (field.name === 'category' || lower === 'category' || lower === 'issue' || lower === 'issue type') {
+  // Match on the visible label first - that is what a human (and the web
+  // agent) actually sees - and fall back to the field name.
+  const label = field.label.toLowerCase().replace(/\*/g, '').trim();
+  const name = field.name.toLowerCase();
+  const lower = `${label} ${name}`;
+
+  if (/category|issue type|type of problem|what is the problem|^reason$/.test(lower)) {
     const options = field.options ?? [];
     if (options.length) {
-      const label = labelName(triage.primaryLabel).toLowerCase();
-      const match = options.find((o) => o.toLowerCase().includes(label.split(' ')[0])) ??
-        options.find((o) => {
-          const map: Record<string, string> = {
-            impersonation: 'impersonation',
-            financial_fraud: 'scam',
-            image_misuse: 'impersonation',
-            harassment: 'harassment',
-            hate_speech: 'harassment',
-            stalking: 'harassment',
-            doxxing: 'harassment',
-            misinformation: 'harassment',
-            defamation: 'harassment',
-            account_takeover: 'hacked',
-            sextortion: 'harassment',
-            counterfeit: 'scam',
-            romance_scam: 'scam',
-            child_safety: 'harassment',
-          };
-          return o.toLowerCase().includes(map[triage.primaryLabel] ?? '');
-        });
+      const primary = labelName(triage.primaryLabel).toLowerCase();
+      const map: Record<string, string> = {
+        impersonation: 'impersonation',
+        financial_fraud: 'scam',
+        image_misuse: 'impersonation',
+        harassment: 'harassment',
+        hate_speech: 'harassment',
+        stalking: 'harassment',
+        doxxing: 'harassment',
+        misinformation: 'harassment',
+        defamation: 'harassment',
+        account_takeover: 'hacked',
+        sextortion: 'harassment',
+        counterfeit: 'scam',
+        romance_scam: 'scam',
+        child_safety: 'harassment',
+      };
+      const match =
+        options.find((o) => o.toLowerCase().includes(primary.split(' ')[0])) ??
+        options.find((o) => o.toLowerCase().includes(map[triage.primaryLabel] ?? ''));
       if (match) return match;
     }
     return options[0] ?? '';
   }
 
   switch (true) {
-    case lower.includes('name') && !lower.includes('username') && !lower.includes('profile'):
-      return profile.name ?? '';
-    case lower.includes('email'):
-      return profile.email ?? '';
-    case lower.includes('mobile') || lower.includes('phone') || lower.includes('callback') || lower.includes('number') && !lower.includes('account'):
-      return profile.phone ?? '';
-    case lower.includes('address') || lower.includes('district'):
-      return profile.address ?? profile.city ?? '';
-    case lower.includes('city'):
-      return profile.city ?? '';
-    case lower.includes('amount') || lower.includes('lost'):
-      return findEntity(triage, 'amount') ?? '';
-    case lower.includes('date') && !lower.includes('birth'):
-      return findEntity(triage, 'date') ?? new Date().toISOString().slice(0, 10);
-    case lower.includes('url') || lower.includes('link') || lower.includes('post') || lower.includes('username') || lower.includes('profile_url') || lower.includes('target') || lower.includes('account'):
+    case /username|profile link|profile url|post \/ profile|post url|link|target|account|url/.test(lower):
       return findEntity(triage, 'url') ?? findEntity(triage, 'handle') ?? '';
-    case lower.includes('description') || lower.includes('details') || lower.includes('narrative') || lower.includes('complaint') || lower.includes('what happened'):
+    case /email/.test(lower):
+      return profile.email ?? '';
+    case /mobile|phone|callback/.test(lower):
+      return profile.phone ?? '';
+    case /address|district/.test(lower):
+      return profile.address ?? profile.city ?? '';
+    case /city/.test(lower):
+      return profile.city ?? '';
+    case /amount|how much|lost/.test(lower):
+      return findEntity(triage, 'amount') ?? '';
+    case /date/.test(lower) && !/birth/.test(lower):
+      return findEntity(triage, 'date') ?? new Date().toISOString().slice(0, 10);
+    case /description|details|narrative|complaint|what happened|stories/.test(lower):
       return narrative;
-    case lower.includes('transaction') || lower.includes('utr'):
+    case /transaction|utr/.test(lower):
       return '';
-    case lower.includes('beneficiary') || lower.includes('receiving'):
+    case /beneficiary|receiving/.test(lower):
       return findEntity(triage, 'upi') ?? findEntity(triage, 'phone') ?? '';
-    case lower.includes('last4') || lower.includes('last 4'):
+    case /last ?4|account number|card number/.test(lower):
       return findEntity(triage, 'account_number') ?? '';
+    case /name/.test(lower):
+      return profile.name ?? '';
     default:
       return '';
   }

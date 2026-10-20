@@ -1,5 +1,6 @@
 import type { EvidenceItem, MonitorBinding } from '@reclaim/core';
 import { SectionTitle, Tag } from './ui';
+import { api } from '../lib/api';
 
 export function EvidenceVault({
   evidence,
@@ -21,7 +22,7 @@ export function EvidenceVault({
           eyebrow="Proof"
           title="Your evidence"
           action={
-            <a href={`/api/cases/${caseId}/casefile.pdf`} className="btn-outline" target="_blank" rel="noreferrer">
+            <a href={api.caseFileUrl(caseId)} className="btn-outline" target="_blank" rel="noreferrer">
               Download case file
             </a>
           }

@@ -243,8 +243,8 @@ export default function App() {
               <YourDetails
                 profile={caseFile.profile ?? {}}
                 onSave={async (profile) => {
-                  const res = await api.updateDetails(caseFile.id, profile, caseFile);
-                  setCaseFile(res.caseFile);
+                  const updated = await api.updateDetails(caseFile.id, profile, caseFile);
+                  setCaseFile(updated);
                 }}
               />
 
@@ -252,8 +252,8 @@ export default function App() {
                 channels={caseFile.plan.channels}
                 profileFilled={Boolean(caseFile.profile?.name && caseFile.profile?.phone)}
                 onSave={async (channelId, fieldName, value) => {
-                  const res = await api.updateFields(caseFile.id, channelId, { [fieldName]: value }, caseFile);
-                  setCaseFile(res.caseFile);
+                  const updated = await api.updateFields(caseFile.id, channelId, { [fieldName]: value }, caseFile);
+                  setCaseFile(updated);
                 }}
               />
             </div>
@@ -275,10 +275,9 @@ export default function App() {
                 onAnalyse={(id) => runChannel(id, 'analyse')}
                 onFile={(id, submit) => runChannel(id, submit ? 'submit' : 'fill')}
                 onSkip={async (id) => {
-                  const res = await api.skip(caseFile.id, id, caseFile);
-                  if (res.caseFile) setCaseFile(res.caseFile);
-                }}
-              />
+                  const updated = await api.skip(caseFile.id, id, caseFile);
+                  setCaseFile(updated);
+                }}              />
             </section>
 
             <section id="agent" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">

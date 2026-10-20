@@ -14,7 +14,7 @@ import {
 } from '@reclaim/core';
 import { config, hasPublicTunnel } from '../env.js';
 import { bus, log, setStatus } from '../bus.js';
-import { getCase, insertCase, insertEvidence, insertMonitor, listMonitors, updateCase } from '../store.js';
+import { adoptCase, getCase, insertCase, insertEvidence, insertMonitor, listMonitors, updateCase } from '../store.js';
 import * as tf from '../tinyfish/client.js';
 
 /* ------------------------------------------------------------------ schemas */
@@ -172,8 +172,8 @@ function saveAndPublish(caseId: string) {
  */
 function resolveCase(caseId: string, provided?: CaseFile): CaseFile {
   if (provided) {
-    const existing = getCase(caseId);
-    if (existing) return existing;
+    // The client's copy is the working copy; keep this instance in step with it.
+    adoptCase(provided);
     return provided;
   }
   const stored = getCase(caseId);
@@ -416,8 +416,10 @@ export async function analyseChannel(
     };
 
     if (spec?.has_form && spec.fields?.length) {
+      // The label is what the agent reads reliably; its idea of the html `name`
+      // can be nonsense (a URL, a uuid), so we key everything off the label.
       const live = spec.fields.map((f) => ({
-        name: f.name ?? slug(f.label),
+        name: slug(f.label),
         label: f.label,
         required: Boolean(f.required),
         kind: (f.kind ?? 'unknown') as Channel['requiredFields'][number]['kind'],
@@ -751,6 +753,21 @@ export async function armMonitors(
 
 export function monitorsFor(caseId: string) {
   return listMonitors(caseId);
+}
+
+/** The case a request is working on, from the store or from the client. */
+export function resolveCaseFor(caseId: string, provided?: CaseFile): CaseFile {
+  return resolveCase(caseId, provided);
+}
+
+/** Marks a channel as deliberately skipped. */
+export function skipChannel(caseId: string, channelId: string, provided?: CaseFile): Channel {
+  const caseFile = resolveCase(caseId, provided);
+  const channel = caseFile.plan.channels.find((c) => c.id === channelId);
+  if (!channel) throw new Error(`Unknown channel ${channelId}`);
+  channel.status = 'skipped';
+  saveAndPublish(caseId);
+  return channel;
 }
 
 /* ------------------------------------------------------- editing the case */
