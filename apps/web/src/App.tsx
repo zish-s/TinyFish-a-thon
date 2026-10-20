@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AgentStep, CaseFile } from '@redress/core';
+import type { AgentStep, CaseFile } from '@reclaim/core';
 import { api, subscribeToCase, type CaseEvent, type LogLine, type Profile } from './lib/api';
 import { Intake } from './components/Intake';
 import { CoverageMap } from './components/CoverageMap';
@@ -7,6 +7,7 @@ import { AgentTheatre } from './components/AgentTheatre';
 import { EvidenceVault } from './components/EvidenceVault';
 import { Pricing } from './components/Pricing';
 import { Dot, Tag } from './components/ui';
+import { Net } from './components/Doodles';
 
 export default function App() {
   const [caseFile, setCaseFile] = useState<CaseFile | null>(null);
@@ -110,29 +111,27 @@ export default function App() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-hair-8 bg-canvas/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3.5">
           <a href="#" onClick={reset} className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-white">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
-                <path d="M12 4v16M4 12h16" />
-              </svg>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-coral-500 text-white">
+              <Net className="h-4.5 w-4.5" />
             </span>
-            <span className="text-[15px] font-bold tracking-tight text-slate-900">Redress</span>
+            <span className="text-[15px] font-extrabold tracking-tight text-ink">ReclaimYourNet</span>
           </a>
 
           {caseFile && (
-            <nav className="hidden items-center gap-5 text-[13.5px] text-slate-500 sm:flex">
-              <a href="#report" className="hover:text-slate-900">
+            <nav className="hidden items-center gap-5 text-[13.5px] text-muted sm:flex">
+              <a href="#report" className="hover:text-ink">
                 Where to report
               </a>
-              <a href="#agent" className="hover:text-slate-900">
+              <a href="#agent" className="hover:text-ink">
                 The agent
               </a>
-              <a href="#evidence" className="hover:text-slate-900">
+              <a href="#evidence" className="hover:text-ink">
                 Evidence
               </a>
-              <a href="#plans" className="hover:text-slate-900">
+              <a href="#plans" className="hover:text-ink">
                 Plans
               </a>
             </nav>
@@ -140,19 +139,19 @@ export default function App() {
 
           <div className="ml-auto flex items-center gap-3">
             {health && (
-              <span className="hidden items-center gap-1.5 text-[11.5px] text-slate-400 md:flex">
+              <span className="hidden items-center gap-1.5 text-[11.5px] text-muted-faint md:flex">
                 <Dot tone={health.tinyfish?.configured ? 'ok' : 'error'} />
                 TinyFish
                 {health.tinyfish?.wallet ? ` $${health.tinyfish.wallet.balance}` : ''}
               </span>
             )}
             {caseFile && (
-              <label className="flex cursor-pointer items-center gap-2 text-[12px] text-slate-500">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] text-muted">
                 <input
                   type="checkbox"
                   checked={sandbox}
                   onChange={(e) => setSandbox(e.target.checked)}
-                  className="h-3.5 w-3.5 accent-brand-600"
+                  className="h-3.5 w-3.5 accent-coral-500"
                 />
                 demo forms
               </label>
@@ -172,35 +171,37 @@ export default function App() {
         ) : (
           <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
             <div className="mb-10">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
                 Here is where this needs to be reported.
               </h1>
-              <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">
+              <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {nowCount} place{nowCount === 1 ? '' : 's'} to start with
                 {laterCount > 0 && `, and ${laterCount} more you can arm afterwards`}. Open one, let the agent read the
                 real form, check what it will type, and then approve it.
               </p>
               {caseFile.incident.urgency !== 'normal' && (
                 <div
-                  className={`mt-5 rounded-2xl border p-4 ${
+                  className={`mt-5 rounded-3xl border p-5 ${
                     caseFile.incident.urgency === 'critical'
-                      ? 'border-rose-200 bg-rose-50'
-                      : 'border-amber-200 bg-amber-50'
+                      ? 'border-rose-300/70 bg-rose-50/80'
+                      : 'border-butter-300/70 bg-butter-50/80'
                   }`}
                 >
                   <p
-                    className={`text-sm font-semibold ${
-                      caseFile.incident.urgency === 'critical' ? 'text-rose-900' : 'text-amber-900'
+                    className={`text-sm font-bold ${
+                      caseFile.incident.urgency === 'critical' ? 'text-[#A63A56]' : 'text-[#7A5C0B]'
                     }`}
                   >
-                    {caseFile.incident.urgency === 'critical' ? 'This one is time-critical.' : 'This one is time-sensitive.'}
+                    {caseFile.incident.urgency === 'critical'
+                      ? 'This one is time-critical.'
+                      : 'This one is time-sensitive.'}
                   </p>
                   <ul className="mt-1.5 space-y-1">
                     {caseFile.incident.urgencyReasons.map((reason) => (
                       <li
                         key={reason}
                         className={`text-[13.5px] leading-relaxed ${
-                          caseFile.incident.urgency === 'critical' ? 'text-rose-800' : 'text-amber-800'
+                          caseFile.incident.urgency === 'critical' ? 'text-[#A63A56]' : 'text-[#8A6A12]'
                         }`}
                       >
                         {reason}
@@ -224,11 +225,11 @@ export default function App() {
               />
             </section>
 
-            <section id="agent" className="mt-16 scroll-mt-24 border-t border-slate-200 pt-12">
+            <section id="agent" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
               <AgentTheatre steps={steps} logs={logs} streamingUrl={streamingUrl} />
             </section>
 
-            <section id="evidence" className="mt-16 scroll-mt-24 border-t border-slate-200 pt-12">
+            <section id="evidence" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
               <EvidenceVault
                 evidence={caseFile.evidence}
                 monitors={monitors}
@@ -241,18 +242,18 @@ export default function App() {
               />
             </section>
 
-            <section id="plans" className="mt-16 scroll-mt-24 border-t border-slate-200 pt-12">
+            <section id="plans" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
               <Pricing />
             </section>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-[12.5px] text-slate-400">
-          <span>Redress - report once, file everywhere, prove it.</span>
+      <footer className="border-t border-hair-8 bg-white/60">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-[12.5px] text-muted-faint">
+          <span>ReclaimYourNet - report once, file everywhere, prove it.</span>
           <span className="flex items-center gap-2">
-            {caseFile && <Tag tone="slate">case {caseFile.id.slice(0, 8)}</Tag>}
+            {caseFile && <Tag tone="neutral">case {caseFile.id.slice(0, 8)}</Tag>}
             <span>Every lookup, form read and follow-up check is done live by a TinyFish web agent.</span>
           </span>
         </div>

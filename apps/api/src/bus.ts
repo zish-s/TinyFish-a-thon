@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding } from '@redress/core';
+import type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding } from '@reclaim/core';
 
 export type CaseEvent =
   | { type: 'status'; status: CaseFile['status']; message?: string }

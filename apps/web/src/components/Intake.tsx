@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Profile } from '../lib/api';
+import { ArrowCurve, Sparkles, Squiggle, Star, Underline } from './Doodles';
 
 const EXAMPLES = [
   {
@@ -57,104 +58,137 @@ export function Intake({
   };
 
   return (
-    <div className="mx-auto max-w-2xl py-10 sm:py-20">
-      <div className="animate-fade-up">
-        <h1 className="h2 text-center">What happened?</h1>
-        <p className="mx-auto mt-3 max-w-lg text-center text-[15px] leading-relaxed text-slate-500">
-          Tell it in your own words. We will work out where it has to be reported and file it for you.
-        </p>
+    <div className="mx-auto max-w-4xl px-5 py-10 sm:py-14">
+      <div className="animate-fade-up relative overflow-hidden rounded-[2.25rem] border border-white/60 shadow-lift">
+        <img
+          src="/hero.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-lilac-100/90 via-canvas/75 to-peach-100/90" />
+        <img
+          src="/backdrop.svg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
 
-        <div className="card card-pad mt-8">
-          <textarea
-            className="input min-h-[150px] resize-y"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="e.g. A fake account is using my photos and asking my friends for money..."
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit();
-            }}
-          />
+        <div className="relative px-6 py-14 sm:px-14 sm:py-20">
+          <div className="max-w-xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-muted">
+              <Star className="h-3.5 w-3.5 text-coral-500" />
+              ReclaimYourNet
+            </span>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button type="button" className="btn-primary" disabled={busy || text.trim().length < 8} onClick={submit}>
-              {busy ? 'Working...' : 'Find where to report this'}
-            </button>
-
-            {micSupported && (
-              <button
-                type="button"
-                onClick={() => {
-                  const r = recognitionRef.current;
-                  if (!r) return;
-                  if (listening) {
-                    r.stop();
-                    setListening(false);
-                  } else {
-                    r.start();
-                    setListening(true);
-                  }
-                }}
-                className="btn-outline"
-              >
-                {listening ? 'Stop dictation' : 'Dictate'}
-              </button>
-            )}
-
-            <button type="button" className="btn-quiet ml-auto" onClick={() => setShowDetails((v) => !v)}>
-              {showDetails ? 'Hide my details' : 'Add my details'}
-            </button>
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-ink sm:text-5xl">
+              What happened?
+            </h1>
+            <div className="mt-2 w-40 text-coral-500">
+              <Underline />
+            </div>
+            <p className="mt-4 text-[15px] leading-relaxed text-muted sm:text-base">
+              Tell it in your own words. We will work out every place it has to be reported, open the real form on each one,
+              and file it for you.
+            </p>
           </div>
 
-          {showDetails && (
-            <div className="mt-5 grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-2">
-              {(
-                [
-                  ['name', 'Name'],
-                  ['email', 'Email'],
-                  ['phone', 'Mobile'],
-                  ['city', 'City'],
-                ] as const
-              ).map(([key, label]) => (
-                <label key={key} className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-500">{label}</span>
-                  <input
-                    className="input !py-2 !text-sm"
-                    value={profile[key] ?? ''}
-                    onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))}
-                  />
-                </label>
-              ))}
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-500">Country</span>
-                <select className="input !py-2 !text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
-                  <option value="IN">India</option>
-                  <option value="US">United States</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="AU">Australia</option>
-                  <option value="CA">Canada</option>
-                </select>
-              </label>
+          <div className="mt-9 rounded-3xl border border-white/70 bg-white/95 p-5 shadow-lift sm:max-w-3xl sm:p-6">
+            <textarea
+              className="input !border-ink/10 min-h-[140px] resize-y"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="e.g. A fake account is using my photos and asking my friends for money..."
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit();
+              }}
+            />
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button type="button" className="btn-primary" disabled={busy || text.trim().length < 8} onClick={submit}>
+                {busy ? 'Working...' : 'Find where to report this'}
+              </button>
+
+              {micSupported && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const r = recognitionRef.current;
+                    if (!r) return;
+                    if (listening) {
+                      r.stop();
+                      setListening(false);
+                    } else {
+                      r.start();
+                      setListening(true);
+                    }
+                  }}
+                  className="btn-outline"
+                >
+                  {listening ? 'Stop dictation' : 'Dictate'}
+                </button>
+              )}
+
+              <button type="button" className="btn-quiet ml-auto" onClick={() => setShowDetails((v) => !v)}>
+                {showDetails ? 'Hide my details' : 'Add my details'}
+              </button>
             </div>
-          )}
+
+            {showDetails && (
+              <div className="mt-5 grid gap-3 border-t border-ink/10 pt-5 sm:grid-cols-2">
+                {(
+                  [
+                    ['name', 'Name'],
+                    ['email', 'Email'],
+                    ['phone', 'Mobile'],
+                    ['city', 'City'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key} className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted">{label}</span>
+                    <input
+                      className="input !py-2.5 !text-sm"
+                      value={profile[key] ?? ''}
+                      onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))}
+                    />
+                  </label>
+                ))}
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-muted">Country</span>
+                  <select className="input !py-2.5 !text-sm" value={country} onChange={(e) => setCountry(e.target.value)}>
+                    <option value="IN">India</option>
+                    <option value="US">United States</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="CA">Canada</option>
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-7 flex flex-wrap items-center gap-2.5 text-sm">
+            <span className="text-muted-faint">Try:</span>
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.tag}
+                type="button"
+                onClick={() => setText(ex.text)}
+                className="rounded-full border border-white/80 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-muted transition hover:border-coral-300 hover:bg-white hover:text-coral-700"
+              >
+                {ex.tag}
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-8 flex max-w-md items-center gap-2 text-xs leading-relaxed text-muted">
+            <Sparkles className="h-4 w-4 shrink-0 text-mint-500" />
+            Nothing is submitted without your approval, and your personal details stay masked until you reveal them.
+          </p>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm">
-          <span className="text-slate-400">Try:</span>
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex.tag}
-              type="button"
-              onClick={() => setText(ex.text)}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-brand-300 hover:text-brand-700"
-            >
-              {ex.tag}
-            </button>
-          ))}
-        </div>
-
-        <p className="mx-auto mt-10 max-w-md text-center text-xs leading-relaxed text-slate-400">
-          Nothing is submitted without your approval. Personal details stay masked until you reveal them.
-        </p>
+        <ArrowCurve className="pointer-events-none absolute right-10 top-16 hidden h-9 w-20 animate-drift text-lilac-300 md:block" />
+        <Squiggle className="pointer-events-none absolute bottom-16 left-8 hidden h-3.5 w-28 text-mint-300 lg:block" />
       </div>
     </div>
   );

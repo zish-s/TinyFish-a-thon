@@ -74,14 +74,14 @@ function evaluate() {
 const grid: Array<Record<string, number>> = [];
 for (const epochs of [250, 500, 900]) {
   for (const l2 of [1e-4, 5e-4, 2e-3]) {
-    grid.push({ REDRESS_EPOCHS: epochs, REDRESS_L2: l2, REDRESS_TEMPERATURE: 2.0 });
+    grid.push({ ReclaimYourNet_EPOCHS: epochs, ReclaimYourNet_L2: l2, ReclaimYourNet_TEMPERATURE: 2.0 });
   }
 }
 for (const temp of [1.2, 1.6, 3.0]) {
-  grid.push({ REDRESS_EPOCHS: 500, REDRESS_L2: 5e-4, REDRESS_TEMPERATURE: temp });
+  grid.push({ ReclaimYourNet_EPOCHS: 500, ReclaimYourNet_L2: 5e-4, ReclaimYourNet_TEMPERATURE: temp });
 }
 for (const margin of [2.0, 6.0, 10.0]) {
-  grid.push({ REDRESS_EPOCHS: 500, REDRESS_L2: 5e-4, REDRESS_TEMPERATURE: 2.0, REDRESS_SECONDARY_MARGIN: margin });
+  grid.push({ ReclaimYourNet_EPOCHS: 500, ReclaimYourNet_L2: 5e-4, ReclaimYourNet_TEMPERATURE: 2.0, ReclaimYourNet_SECONDARY_MARGIN: margin });
 }
 
 const results: Array<{ cfg: Record<string, number>; m: ReturnType<typeof evaluate> }> = [];
@@ -89,7 +89,7 @@ for (const cfg of grid) {
   for (const [k, v] of Object.entries(cfg)) process.env[k] = String(v);
   results.push({ cfg, m: evaluate() });
   console.log(
-    `epochs=${cfg.REDRESS_EPOCHS} l2=${cfg.REDRESS_L2} temp=${cfg.REDRESS_TEMPERATURE} -> F1 ${results.at(-1)!.m.macroF1.toFixed(3)} P ${results.at(-1)!.m.macroP.toFixed(3)} R ${results.at(-1)!.m.macroR.toFixed(3)} top1 ${(results.at(-1)!.m.top1 * 100).toFixed(1)}%`,
+    `epochs=${cfg.ReclaimYourNet_EPOCHS} l2=${cfg.ReclaimYourNet_L2} temp=${cfg.ReclaimYourNet_TEMPERATURE} -> F1 ${results.at(-1)!.m.macroF1.toFixed(3)} P ${results.at(-1)!.m.macroP.toFixed(3)} R ${results.at(-1)!.m.macroR.toFixed(3)} top1 ${(results.at(-1)!.m.top1 * 100).toFixed(1)}%`,
   );
 }
 

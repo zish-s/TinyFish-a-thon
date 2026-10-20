@@ -11,7 +11,7 @@
     }
   },
   "env": {
-    "DATA_DIR": "/tmp/redress",
+    "DATA_DIR": "/tmp/ReclaimYourNet",
     "DEFAULT_COUNTRY": "IN",
     "DEFAULT_LANG": "en"
   }

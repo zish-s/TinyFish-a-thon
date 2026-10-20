@@ -10,7 +10,7 @@ import {
   type Channel,
   type EvidenceItem,
   type ReporterProfile,
-} from '@redress/core';
+} from '@reclaim/core';
 import { config, hasPublicTunnel } from '../env.js';
 import { bus, log, setStatus } from '../bus.js';
 import { getCase, insertCase, insertEvidence, insertMonitor, listMonitors, updateCase } from '../store.js';
@@ -633,7 +633,7 @@ export async function armMonitors(caseId: string, sandbox = false): Promise<Case
     try {
       const created = await tf.createMonitor({
         type: 'fetch',
-        name: `Redress - ${channel.name} - ${caseId.slice(0, 8)}`,
+        name: `ReclaimYourNet - ${channel.name} - ${caseId.slice(0, 8)}`,
         config: { url: target, format: 'markdown', links: true },
         schedule_cron: '0 */6 * * *',
         purpose: `The reported content on ${channel.name} was taken down, removed, or the page now shows a takedown notice.`,
@@ -675,7 +675,7 @@ export async function armMonitors(caseId: string, sandbox = false): Promise<Case
     try {
       const created = await tf.createMonitor({
         type: 'search',
-        name: `Redress - clone watch - ${caseFile.id.slice(0, 8)}`,
+        name: `ReclaimYourNet - clone watch - ${caseFile.id.slice(0, 8)}`,
         config: { query: `"${handle}" ${platform}`, recency_minutes: 10080, result_limit: 5 },
         schedule_cron: '0 */6 * * *',
         purpose: `A new page or post impersonating ${handle} on ${platform} appears.`,

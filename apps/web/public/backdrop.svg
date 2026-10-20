@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="Decorative doodles">
+  <defs>
+    <radialGradient id="glowA" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#FFD9C2" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FFD9C2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowC" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#CDEFE2" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#CDEFE2" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.7" fill="#6E6689" fill-opacity="0.13"/>
+    </pattern>
+  </defs>
+
+  <!-- transparent layer: the photo shows through -->
+  <rect width="1600" height="900" fill="url(#dots)"/>
+
+  <ellipse cx="250" cy="150" rx="520" ry="380" fill="url(#glowA)"/>
+  <ellipse cx="1380" cy="780" rx="560" ry="380" fill="url(#glowB)"/>
+  <ellipse cx="1220" cy="110" rx="440" ry="320" fill="url(#glowC)"/>
+
+  <path d="M1330 210c120-36 214 34 206 132-8 96-108 158-206 126-96-32-150-140-96-214 16-22 40-36 96-44Z" fill="#FFC9B5" fill-opacity="0.3"/>
+  <path d="M120 640c96-30 182 22 184 108 2 88-88 142-176 124-86-18-132-112-96-180 12-22 32-40 88-52Z" fill="#C9EADD" fill-opacity="0.35"/>
+  <path d="M690 80c78-22 148 24 146 92-2 70-76 108-146 92-68-16-104-88-74-140 10-18 28-34 74-44Z" fill="#D6C9FF" fill-opacity="0.3"/>
+
+  <!-- a loose "net" of hand-drawn lines -->
+  <g stroke="#6E6689" stroke-opacity="0.22" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <path d="M1215 470c48-26 96 18 144-6s66-66 112-46"/>
+    <path d="M1180 528c52-28 104 20 156-4s72-70 120-48"/>
+    <path d="M1148 586c56-30 110 22 166-2s78-74 128-50"/>
+    <path d="M1250 430c-6 44 30 74 8 118s-6 82 26 110"/>
+    <path d="M1338 404c-4 48 34 80 10 128s-4 88 30 118"/>
+  </g>
+  <g fill="#6E6689" fill-opacity="0.25">
+    <circle cx="1258" cy="430" r="7"/><circle cx="1360" cy="404" r="7"/>
+    <circle cx="1214" cy="546" r="7"/><circle cx="1318" cy="530" r="7"/>
+  </g>
+
+  <!-- doodles -->
+  <g stroke="#F2603F" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.5">
+    <path d="M180 150c22-18 44 14 66-4s38 4 54-8"/>
+    <path d="M1440 420l16-34 12 30 32 8-30 14-8 32-16-28-30-10Z"/>
+    <path d="M980 760c30-22 60 10 88-12s52 6 74-14"/>
+  </g>
+  <g stroke="#3F9E7E" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55">
+    <path d="M560 118c18-14 34 10 52-4s28 4 40-8"/>
+    <path d="M1466 190l10-22 8 20 22 6-20 8-6 22-10-18-20-6Z"/>
+  </g>
+  <g stroke="#8B7CC7" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.5">
+    <path d="M300 806c26-20 52 8 76-14s46 4 66-14"/>
+    <circle cx="820" cy="806" r="16"/>
+  </g>
+</svg>

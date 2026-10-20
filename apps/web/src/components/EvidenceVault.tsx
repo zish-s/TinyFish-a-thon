@@ -1,4 +1,4 @@
-import type { EvidenceItem, MonitorBinding } from '@redress/core';
+import type { EvidenceItem, MonitorBinding } from '@reclaim/core';
 import { SectionTitle, Tag } from './ui';
 
 export function EvidenceVault({
@@ -27,7 +27,7 @@ export function EvidenceVault({
           }
         />
         {evidence.length === 0 ? (
-          <p className="text-[13.5px] leading-relaxed text-slate-500">
+          <p className="text-[13.5px] leading-relaxed text-muted">
             Every form the agent reads and every reference number it gets back is recorded here, hashed and chained, so
             you can prove what was filed and when.
           </p>
@@ -36,8 +36,8 @@ export function EvidenceVault({
             {evidence.map((item) => (
               <div key={item.id} className="card p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[14px] font-semibold text-slate-800">{item.label}</span>
-                  <Tag tone="slate">{item.kind.replace('_', ' ')}</Tag>
+                  <span className="text-[14px] font-semibold text-ink">{item.label}</span>
+                  <Tag tone="neutral">{item.kind.replace('_', ' ')}</Tag>
                 </div>
                 {item.url && (
                   <a href={item.url} target="_blank" rel="noreferrer" className="link mt-1 block truncate">
@@ -45,11 +45,11 @@ export function EvidenceVault({
                   </a>
                 )}
                 {item.content && (
-                  <pre className="scroll-thin mt-2.5 max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-mono text-[11.5px] leading-relaxed text-slate-600">
+                  <pre className="scroll-thin mt-2.5 max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-canvas p-3 font-mono text-[11.5px] leading-relaxed text-muted">
                     {item.content.slice(0, 1000)}
                   </pre>
                 )}
-                <div className="mt-2.5 space-y-0.5 font-mono text-[10.5px] text-slate-400">
+                <div className="mt-2.5 space-y-0.5 font-mono text-[10.5px] text-muted-faint">
                   <div>sha256 {item.hash}</div>
                   <div>prev {item.prevHash}</div>
                 </div>
@@ -70,7 +70,7 @@ export function EvidenceVault({
           }
         />
         {monitors.length === 0 ? (
-          <p className="text-[13.5px] leading-relaxed text-slate-500">
+          <p className="text-[13.5px] leading-relaxed text-muted">
             Once something is filed, we can keep checking the page every few hours and tell you whether the content
             actually came down - or quietly came back.
           </p>
@@ -79,11 +79,11 @@ export function EvidenceVault({
             {monitors.map((m) => (
               <div key={m.id} className="card p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[14px] font-semibold text-slate-800">{m.channelName}</span>
-                  <Tag tone={m.status === 'active' ? 'brand' : 'slate'}>{m.status}</Tag>
+                  <span className="text-[14px] font-semibold text-ink">{m.channelName}</span>
+                  <Tag tone={m.status === 'active' ? 'mint' : 'neutral'}>{m.status}</Tag>
                 </div>
-                <p className="mt-1 font-mono text-[11.5px] text-slate-400">{m.target}</p>
-                <p className="mt-1.5 text-[13px] text-slate-600">{m.purpose}</p>
+                <p className="mt-1 font-mono text-[11.5px] text-muted-faint">{m.target}</p>
+                <p className="mt-1.5 text-[13px] text-muted">{m.purpose}</p>
               </div>
             ))}
           </div>

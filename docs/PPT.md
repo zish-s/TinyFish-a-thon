@@ -1,10 +1,10 @@
-# Redress - KriticalHacks 2026 pitch deck (AI/ML track)
+# ReclaimYourNet - KriticalHacks 2026 pitch deck (AI/ML track)
 
 > Submission: PPT + demo video + GitHub URL (optional).
 > Every slide below maps to one of the eight sections the Unstop submission form
 > asks for. Slide 3 of the appendix lists the mapping explicitly.
 
-**One line:** *You describe the harm once. Redress finds every place it has to be
+**One line:** *You describe the harm once. ReclaimYourNet finds every place it has to be
 reported, reads the real form on each of those places, pre-fills it, files it with
 your approval, and then watches to see whether it actually came down.*
 
@@ -12,7 +12,7 @@ your approval, and then watches to see whether it actually came down.*
 
 ## Slide 1 - Title
 
-**Redress**
+**ReclaimYourNet**
 *Report once. File everywhere. Prove it happened.*
 
 - Track: AI/ML (open innovation)
@@ -22,7 +22,7 @@ your approval, and then watches to see whether it actually came down.*
 Speaker note: "Every one of us has, at some point, wanted to report online abuse
 and given up half-way through because it meant four different forms on four
 different websites, each asking for slightly different things, with no idea which
-one actually mattered. Redress is the layer that removes that job."
+one actually mattered. ReclaimYourNet is the layer that removes that job."
 
 ---
 
@@ -58,18 +58,18 @@ organisations, no single place that would have told the victim to do all seven.
 
 ## Slide 3 - Proposed solution
 
-**Redress turns one description into a filed, evidenced, monitored case.**
+**ReclaimYourNet turns one description into a filed, evidenced, monitored case.**
 
 | Stage | What happens | Who does it |
 | --- | --- | --- |
 | 1. Describe | One free-text or spoken description of the incident | Victim |
-| 2. Triage | A local, explainable model labels the incident type, extracts entities (platform, amount, date, handles) and masks sensitive values | Redress (offline ML) |
-| 3. Plan | A channel planner turns the labels into a prioritised set of routes: platform / authority / financial / pre-emptive protection / de-indexing, each with a reason and a deadline | Redress (rules + ML) |
+| 2. Triage | A local, explainable model labels the incident type, extracts entities (platform, amount, date, handles) and masks sensitive values | ReclaimYourNet (offline ML) |
+| 3. Plan | A channel planner turns the labels into a prioritised set of routes: platform / authority / financial / pre-emptive protection / de-indexing, each with a reason and a deadline | ReclaimYourNet (rules + ML) |
 | 4. Discover | A **TinyFish web agent** searches the live web for the *current* official portal, helpline and reporting page for each route | TinyFish Search |
 | 5. Read | The same agent opens the real page and **reads the form it actually has today** - fields, labels, required flags, evidence requested | TinyFish Web Agent |
 | 6. Review | The victim sees every value that will be typed, with sensitive fields masked, and approves or edits | Victim |
 | 7. File | The agent types the approved values into the live form, stops before Submit, and submits only on a second explicit approval | TinyFish Web Agent |
-| 8. Prove | Every page read, every reference number and every submission is written into a SHA-256 hash chain and exported as a court/bank-ready case file | Redress |
+| 8. Prove | Every page read, every reference number and every submission is written into a SHA-256 hash chain and exported as a court/bank-ready case file | ReclaimYourNet |
 | 9. Follow up | TinyFish Monitors re-check the reported URL on a schedule and tell the victim whether the content actually came down - and escalate if it did not | TinyFish Monitor |
 
 **The design principle: nothing about the world is hard-coded.** The channel
@@ -87,7 +87,7 @@ They are not a compliance professional. They are stressed, they are on a deadlin
 
 Concrete use cases we support today:
 
-| Use case | What Redress does |
+| Use case | What ReclaimYourNet does |
 | --- | --- |
 | Impersonation + money | Platform report, cybercrime fraud complaint, bank dispute, police FIR, clone-watch monitor |
 | Morphed / AI-generated intimate image | Takedown request, pre-emptive hash registration (Take It Down, StopNCII, Takedown, RemoveHer, Redo), on-device blur before upload, de-indexing |
@@ -163,7 +163,7 @@ that is exactly the part an LLM cannot do and a hard-coded list does badly.
 redaction of personal data. Those stay local, deterministic and auditable.
 
 **Cost discipline.** Search and Fetch are free within TinyFish's daily
-allowance; the Agent is metered per step ($0.016). Redress therefore:
+allowance; the Agent is metered per step ($0.016). ReclaimYourNet therefore:
 runs archaeology once per channel and caches the field spec, splits filing into
 "fill" and "submit" so a human approval sits between them, and never runs an
 agent the user has not asked for.
@@ -184,7 +184,7 @@ agent really runs; only the target changes.
    |  POST /api/cases/:id/channels/:id/file  -> agent fills / submits
    v
  API (Fastify, Node 20+, TypeScript)
-   |- @redress/core      classifier, taxonomy, planner, redaction   (no network)
+   |- @reclaim/core      classifier, taxonomy, planner, redaction   (no network)
    |- pipeline           discover -> analyse -> review -> file -> monitor
    |- evidence           SHA-256 hash chain + PDFKit case file
    |- store              node:sqlite (cases, evidence, monitors)
@@ -257,7 +257,7 @@ reports.**
 | Free | $0 | Anyone reporting one incident | Full triage, live portal discovery, file on 2 channels, case file PDF |
 | Pro | $4.99 / month | Someone handling a case on their own | Unlimited channels, agent files every form, evidence vault, follow-up monitors, pre-emptive protection arming |
 | Team | $49 / seat / month | NGOs, victim-support orgs, campus safety | Multi-case workspace, shared evidence vault, SLA tracking, escalation templates |
-| **Redress API** | **$499 / month + usage** | **Trust & Safety, fraud and compliance teams at banks and platforms** | **Incident in, regulator-ready case file out. Live channel graph per jurisdiction, SLA clocks and breach alerts, audit-grade evidence chain, webhooks for case and monitor events** |
+| **ReclaimYourNet API** | **$499 / month + usage** | **Trust & Safety, fraud and compliance teams at banks and platforms** | **Incident in, regulator-ready case file out. Live channel graph per jurisdiction, SLA clocks and breach alerts, audit-grade evidence chain, webhooks for case and monitor events** |
 
 **Unit economics (measured, not guessed):**
 
@@ -276,7 +276,7 @@ of a regulator-ready audit trail.
 **Why someone pays for the API, not just the app:** a bank's fraud desk is
 measured on complaint-handling SLA and on losses recovered, and a platform's
 trust & safety team is measured on response time and on evidence when a
-regulator asks. Redress gives both an auditable, automated, jurisdiction-aware
+regulator asks. ReclaimYourNet gives both an auditable, automated, jurisdiction-aware
 routing layer and the proof that it ran.
 
 **Market:** cyber-fraud and identity fraud are among the fastest-growing cost
@@ -320,7 +320,7 @@ compliance-driven spend - not a discretionary "nice to have" tool.
    "of the 312 reports filed in July, 61% of content was removed within 7 days,
    median 41 hours" - the evidence problem solved is also a market-size
    problem.
-4. **The Redress API in production**: webhooks, SLA breach alerts, regulator
+4. **The ReclaimYourNet API in production**: webhooks, SLA breach alerts, regulator
    export formats (India's cybercrime portal, RBI ombudsman, FTC, IC3).
 5. **Community and NGO workspaces** with trained case workers.
 6. **Pre-emptive arming as a first-class action**: upload your photo *once* to
@@ -328,7 +328,7 @@ compliance-driven spend - not a discretionary "nice to have" tool.
    defence against AI-morphed content.
 7. **Multilingual narratives** - a complaint written in Hindi or Tamil is
    routinely ignored; a translated, jurisdiction-appropriate narrative is not.
-8. **A public channel graph.** Every Redress user benefits from every other
+8. **A public channel graph.** Every ReclaimYourNet user benefits from every other
    user's live discovery, so the resolution of "where do I report this" gets
    better with every case.
 
@@ -382,10 +382,10 @@ docs/                    this deck, the plan, the dev.to post
 - **Human in the loop, twice.** Approval before the agent types, and a separate
   approval before it submits.
 - **No invention.** The agent is instructed to leave a field empty and report it
-  rather than guess. Redress surfaces those gaps to the user.
+  rather than guess. ReclaimYourNet surfaces those gaps to the user.
 - **Privacy by default.** Addresses, ID numbers, card and bank details are
   masked in every shared artifact and only revealed on request.
-- **Legal repair, not censorship.** Redress routes to the body with the legal
+- **Legal repair, not censorship.** ReclaimYourNet routes to the body with the legal
   authority to act. It does not decide what is true.
 - **No dark patterns, no data resale.** Evidence is a private artefact by
   default; sharing is an explicit action.

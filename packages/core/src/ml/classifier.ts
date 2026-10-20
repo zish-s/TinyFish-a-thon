@@ -80,14 +80,14 @@ export class IncidentClassifier {
   private readonly featureNames: string[];
 
   // Hyper-parameters (overridable through the environment for tuning runs).
-  private readonly epochs = knob('REDRESS_EPOCHS', 300);
-  private readonly learningRate = knob('REDRESS_LR', 0.6);
-  private readonly momentum = knob('REDRESS_MOMENTUM', 0.9);
-  private readonly l2 = knob('REDRESS_L2', 2e-3);
-  private readonly maxPosWeight = knob('REDRESS_MAX_POS_WEIGHT', 6);
-  private readonly temperature = knob('REDRESS_TEMPERATURE', 2.0);
-  private readonly secondaryThreshold = knob('REDRESS_SECONDARY_THRESHOLD', 0.45);
-  private readonly secondaryRatio = knob('REDRESS_SECONDARY_RATIO', 0.45);
+  private readonly epochs = knob('ReclaimYourNet_EPOCHS', 300);
+  private readonly learningRate = knob('ReclaimYourNet_LR', 0.6);
+  private readonly momentum = knob('ReclaimYourNet_MOMENTUM', 0.9);
+  private readonly l2 = knob('ReclaimYourNet_L2', 2e-3);
+  private readonly maxPosWeight = knob('ReclaimYourNet_MAX_POS_WEIGHT', 6);
+  private readonly temperature = knob('ReclaimYourNet_TEMPERATURE', 2.0);
+  private readonly secondaryThreshold = knob('ReclaimYourNet_SECONDARY_THRESHOLD', 0.45);
+  private readonly secondaryRatio = knob('ReclaimYourNet_SECONDARY_RATIO', 0.45);
 
   constructor(examples: TrainingExample[] = TRAINING_DATA) {
     this.labels = INCIDENT_TYPES.map((t) => t.id);

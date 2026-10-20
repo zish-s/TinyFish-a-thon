@@ -2,7 +2,7 @@
 
 > Title options:
 > - "I built an agent that files your abuse reports for you - while you watch"
-> - "Redress: one description of online harm, every report you need to file"
+> - "ReclaimYourNet: one description of online harm, every report you need to file"
 > - "Your bank has 24 hours to freeze your money. Your platform has no idea what to do. Both were links in a list I had to find."
 >
 > Tags: `webdev`, `ai`, `machinelearning`, `tutorial`, `showdev`
@@ -23,7 +23,7 @@ half-forty government pages, and the knowledge that you should probably post
 screenshots somewhere. Then you give up, because it is 11pm and you have a
 different form per platform.
 
-So I built **Redress**.
+So I built **ReclaimYourNet**.
 
 > **One description of what happened. Every report you need to file, on the right
 > portal, with the right evidence, and with proof that you filed it.**
@@ -36,7 +36,7 @@ You type one sentence - or dictate it:
 > asking my friends to send me 500 rupees as a gift. They also posted my phone
 > number on the page."*
 
-Redress:
+ReclaimYourNet:
 
 1. **Triages it** with a small, local, explainable model. Not a black box: it
    tells you that "money" contributed +2.1 to *financial fraud* and "photo"
@@ -137,16 +137,16 @@ missing one can cost them their money.
 ## Things I learned building it
 
 - **A missing reporting route is worse than a useless one.** The single most
-  valuable screen in Redress is not the list of things to do, it is the list of
+  valuable screen in ReclaimYourNet is not the list of things to do, it is the list of
   things you have *not* covered.
 - **"Pre-emptive" beats "reactive".** Take It Down, StopNCII, Takedown,
   RemoveHer, Redo and C2PA let you register a photo *before* it is misused and
   have it pulled down later - including AI-morphed copies. Almost nobody knows
-  these exist. Redress surfaces them at the moment they are useful.
+  these exist. ReclaimYourNet surfaces them at the moment they are useful.
 - **Split "fill" from "submit".** Two approvals instead of one, and the agent
   never gets to decide on its own what gets sent in a victim's name.
 - **Make the model say no.** The agent is instructed to leave a required field
-  empty and report it rather than guess. Redress shows that gap to the user
+  empty and report it rather than guess. ReclaimYourNet shows that gap to the user
   instead of hiding it. The blank field in the UI is a feature.
 - **Measure the credits.** TinyFish Search and Fetch are free within the daily
   allowance; the Agent is $0.016/step; a Monitor is $0.005/run. A full case

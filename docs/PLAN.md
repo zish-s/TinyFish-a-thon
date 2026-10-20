@@ -1,10 +1,10 @@
-# Redress - what was built, and why
+# ReclaimYourNet - what was built, and why
 
 **Track:** AI/ML (open innovation) - KriticalHacks 2026 (AssetMerkle x IGDTUW, with TinyFish)
 
 ## The one-sentence product
 
-You describe the harm once; Redress finds every place it has to be reported, reads
+You describe the harm once; ReclaimYourNet finds every place it has to be reported, reads
 the real form on each of those places, pre-fills it, files it with your approval,
 and then watches to see whether it actually came down.
 
@@ -73,7 +73,7 @@ human can check.
 
 ### 4. Coverage gaps are the most valuable screen
 
-The most useful thing Redress shows is not the list of things to do, it is the
+The most useful thing ReclaimYourNet shows is not the list of things to do, it is the
 list of things you have **not** covered:
 
 > *"No police FIR in the plan - a cybercrime portal complaint is not enough:
@@ -89,7 +89,7 @@ refund claim. That gap analysis is the product.
 Take It Down, StopNCII, Takedown (CCRI), RemoveHer, Redo, C2PA Content
 Credentials, Desexualise (on-device blur before upload) and Google/Bing URL
 removal are near-unknown to the public, and they are the *cheapest* defence
-against morphed and AI-generated content. Redress surfaces them at the moment
+against morphed and AI-generated content. ReclaimYourNet surfaces them at the moment
 they are useful, and says what each one actually does.
 
 ### 6. Proof is a by-product

@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
-import type { CaseFile, MonitorBinding } from '@redress/core';
-import { labelName } from '@redress/core';
+import type { CaseFile, MonitorBinding } from '@reclaim/core';
+import { labelName } from '@reclaim/core';
 
 function ascii(input: string): string {
   return input
@@ -22,7 +22,7 @@ const LINE = '#e2e8f0';
  */
 export function renderCaseFile(caseFile: CaseFile, monitors: MonitorBinding[] = []): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `Redress case file ${caseFile.id}` } });
+    const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `ReclaimYourNet case file ${caseFile.id}` } });
     const chunks: Buffer[] = [];
     doc.on('data', (c: Buffer) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -33,7 +33,7 @@ export function renderCaseFile(caseFile: CaseFile, monitors: MonitorBinding[] = 
 
     // ---------------------------------------------------------------- header
     doc.rect(0, 0, doc.page.width, 8).fill(ACCENT);
-    doc.fillColor(INK).fontSize(10).font('Helvetica-Bold').text('REDRESS  /  CASE FILE', 48, 48, { characterSpacing: 1.2 });
+    doc.fillColor(INK).fontSize(10).font('Helvetica-Bold').text('ReclaimYourNet  /  CASE FILE', 48, 48, { characterSpacing: 1.2 });
     doc
       .fillColor(MUTED)
       .fontSize(8)
@@ -193,7 +193,7 @@ export function renderCaseFile(caseFile: CaseFile, monitors: MonitorBinding[] = 
       .fontSize(7.5)
       .font('Helvetica')
       .text(
-        'Produced by Redress. Filing details were collected live from official portals and submitted by an automated web agent; the complainant reviewed every field before submission. This document is a factual record, not legal advice.',
+        'Produced by ReclaimYourNet. Filing details were collected live from official portals and submitted by an automated web agent; the complainant reviewed every field before submission. This document is a factual record, not legal advice.',
         48,
         doc.y,
         { width: pageWidth },

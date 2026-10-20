@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { config } from './env.js';
-import type { CaseFile, EvidenceItem, MonitorBinding } from '@redress/core';
+import type { CaseFile, EvidenceItem, MonitorBinding } from '@reclaim/core';
 
 /**
  * Storage.
@@ -31,7 +31,7 @@ export let storageMode: 'sqlite' | 'memory' = 'memory';
 try {
   fs.mkdirSync(config.dataDir, { recursive: true });
   const { DatabaseSync: Sqlite } = require_('node:sqlite') as { DatabaseSync: new (file: string) => DatabaseSync };
-  db = new Sqlite(path.join(config.dataDir, 'redress.db'));
+  db = new Sqlite(path.join(config.dataDir, 'ReclaimYourNet.db'));
   db.exec(`
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS cases (

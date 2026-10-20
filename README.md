@@ -1,12 +1,14 @@
 <div align="center">
 
-# Redress
+# ReclaimYourNet
 
 **Report once. File everywhere. Prove it happened.**
 
 *A TinyFish web agent that turns one description of online harm into every report
 you need to file - on the right portals, with the right evidence, and with proof
 that you actually filed them.*
+
+![ReclaimYourNet - describe what happened](docs/screenshot-landing.png)
 
 [![KriticalHacks 2026](https://img.shields.io/badge/KriticalHacks_2026-AI%2FML%20track-14b8a6)](https://kritical-hacks.vercel.app/)
 [![TinyFish](https://img.shields.io/badge/built%20with-TinyFish-2dd4bf)](https://docs.tinyfish.ai/)
@@ -44,18 +46,18 @@ The hard part was never filling in a form. It is:
 
 ## The solution
 
-**Redress turns one description into a filed, evidenced, monitored case.**
+**ReclaimYourNet turns one description into a filed, evidenced, monitored case.**
 
 | # | Stage | Who does it |
 | --- | --- | --- |
 | 1 | **Describe** - one free-text or spoken description | Victim |
-| 2 | **Triage** - a local, explainable model labels the harm, extracts entities and masks sensitive values | Redress (offline ML) |
-| 3 | **Plan** - labels become a prioritised set of routes, each with a reason and a deadline | Redress (rules + ML) |
+| 2 | **Triage** - a local, explainable model labels the harm, extracts entities and masks sensitive values | ReclaimYourNet (offline ML) |
+| 3 | **Plan** - labels become a prioritised set of routes, each with a reason and a deadline | ReclaimYourNet (rules + ML) |
 | 4 | **Discover** - a web agent searches the live web for the *current* official portal for each route | **TinyFish Search** |
 | 5 | **Read** - the agent opens the real page and reads the form it actually has today | **TinyFish Web Agent** |
 | 6 | **Review** - the victim sees every value that will be typed, with sensitive fields masked | Victim |
 | 7 | **File** - the agent types the approved values, stops, and submits only on a second explicit approval | **TinyFish Web Agent** |
-| 8 | **Prove** - every page read, reference number and submission goes into a SHA-256 hash chain, exportable as a case-file PDF | Redress |
+| 8 | **Prove** - every page read, reference number and submission goes into a SHA-256 hash chain, exportable as a case-file PDF | ReclaimYourNet |
 | 9 | **Follow up** - monitors re-check the reported URL and tell you whether the content actually came down | **TinyFish Monitor** |
 
 **The design principle: nothing about the world is hard-coded.** The channel
@@ -63,7 +65,7 @@ catalogue in the code is only a *fallback*. The real channel graph - which
 portal, which URL, which fields, which evidence - is resolved **live, per case,
 at the moment of the report**.
 
-![The Redress coverage map, with the live official portals discovered by TinyFish](docs/screenshot-coverage-map.png)
+![The ReclaimYourNet coverage map, with the live official portals discovered by TinyFish](docs/screenshot-coverage-map.png)
 
 *One sentence in, and the agent has already found the real reporting pages -
 `help.instagram.com`, `i4c.mha.gov.in`, `cert-in.org.in`, `rbi.org.in` - each
@@ -87,7 +89,7 @@ We use four TinyFish surfaces, each for a job a static implementation cannot do.
 data. Those stay local, deterministic and auditable.
 
 **Cost discipline.** Search and Fetch are free within TinyFish's daily
-allowance; the Agent is metered per step ($0.016). Redress therefore reads each
+allowance; the Agent is metered per step ($0.016). ReclaimYourNet therefore reads each
 form once and caches the field spec, splits filing into "fill" and "submit" so
 a human approval sits between them, and never runs an agent the user did not
 ask for.
@@ -150,7 +152,7 @@ parts an LLM cannot do and a hard-coded list does badly.
    |  POST /api/cases/:id/channels/:id/file -> the agent fills / submits
    v
  API (Fastify 5, Node 20+, TypeScript)
-   |- @redress/core   classifier, taxonomy, planner, redaction   (no network)
+   |- @reclaim/core   classifier, taxonomy, planner, redaction   (no network)
    |- pipeline        discover -> analyse -> review -> file -> monitor
    |- evidence        SHA-256 hash chain + PDFKit case file
    |- store           SQLite when writable, in-memory otherwise (serverless safe)
@@ -171,7 +173,7 @@ decides *what actually gets submitted*. No layer can silently submit anything.
 ## Quick start
 
 ```bash
-git clone <your-fork> redress && cd redress
+git clone <your-fork> ReclaimYourNet && cd ReclaimYourNet
 npm install
 cp .env.example .env      # add your TINYFISH_API_KEY
 npm run dev               # API on :4000, web on :5173
@@ -248,11 +250,11 @@ docs/PLAN.md                  what was built, and why
 - **Human in the loop, twice.** Approval before the agent types, and a separate
   approval before it submits.
 - **No invention.** The agent is instructed to leave a field empty and report
-  it rather than guess. Redress surfaces those gaps to the user instead of
+  it rather than guess. ReclaimYourNet surfaces those gaps to the user instead of
   hiding them.
 - **Privacy by default.** Addresses, ID numbers, card and bank details are
   masked in every shared artefact and only revealed on request.
-- **Legal repair, not censorship.** Redress routes to the body with the legal
+- **Legal repair, not censorship.** ReclaimYourNet routes to the body with the legal
   authority to act. It does not decide what is true.
 - **No dark patterns, no data resale.** Evidence is private by default;
   sharing is an explicit action.
@@ -268,7 +270,7 @@ Free for victims, paid for the organisations that receive the reports.
 | Free | $0 | Anyone reporting one incident |
 | Pro | $4.99 / month | Someone handling a case alone |
 | Team | $49 / seat / month | NGOs, victim-support orgs, campus safety |
-| **Redress API** | **$499 / month + usage** | **Trust & Safety, fraud and compliance teams** |
+| **ReclaimYourNet API** | **$499 / month + usage** | **Trust & Safety, fraud and compliance teams** |
 
 **Unit economics (measured against the live API, not guessed):**
 
@@ -283,7 +285,7 @@ Free for victims, paid for the organisations that receive the reports.
 **Why the API tier has a buyer:** a bank's fraud desk is measured on
 complaint-handling SLA and on losses recovered; a platform's trust & safety
 team is measured on response time and on evidence when a regulator asks.
-Redress gives both an auditable, jurisdiction-aware routing layer and the proof
+ReclaimYourNet gives both an auditable, jurisdiction-aware routing layer and the proof
 that it ran.
 
 **Market context (via TinyFish Search, Aug 2026):** Indian banking fraud losses

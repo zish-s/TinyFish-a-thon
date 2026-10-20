@@ -1,5 +1,5 @@
 {
-  "name": "@redress/web",
+  "name": "@reclaim/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@redress/core": "*",
+    "@reclaim/core": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

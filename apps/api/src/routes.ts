@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { INCIDENT_TYPES, PLATFORM_CHANNELS, AUTHORITY_CHANNELS, PROTECTION_CHANNELS, EMERGENCY_BY_COUNTRY, triage } from '@redress/core';
+import { INCIDENT_TYPES, PLATFORM_CHANNELS, AUTHORITY_CHANNELS, PROTECTION_CHANNELS, EMERGENCY_BY_COUNTRY, triage } from '@reclaim/core';
 import { bus, type CaseEvent } from './bus.js';
 import { config, hasPublicTunnel, hasTinyFish } from './env.js';
 import { getCase, listCases } from './store.js';
@@ -196,77 +196,79 @@ export async function registerRoutes(app: FastifyInstance) {
     }
     const pdf = await renderCaseFile(caseFile, orch.monitorsFor(id));
     reply.header('Content-Type', 'application/pdf');
-    reply.header('Content-Disposition', `attachment; filename="redress-case-${id.slice(0, 8)}.pdf"`);
+    reply.header('Content-Disposition', `attachment; filename="ReclaimYourNet-case-${id.slice(0, 8)}.pdf"`);
     return reply.send(pdf);
   });
 
   /* ------------------------------------------------------------ pricing */
   app.get('/api/pricing', async () => ({
-    currency: 'USD',
+    currency: 'INR',
+    note: 'Free for the person who was hurt. The money comes from the organisations that receive the reports.',
     plans: [
       {
         id: 'free',
         name: 'Free',
         price: 0,
-        unit: 'forever',
-        for: 'Anyone who needs to report one incident',
+        unit: 'always',
+        for: 'Anyone reporting something that happened to them.',
         includes: [
-          'Full triage and channel plan',
-          'Live official portal discovery',
-          'File on up to 2 channels',
-          'Case file export (PDF)',
+          'We find every place it has to be reported',
+          'We open the real form and fill it in for you',
+          'File on 2 places',
+          'Download the case file as a PDF',
         ],
-        limit: '2 channels per case',
+        limit: '2 places per report',
       },
       {
         id: 'pro',
         name: 'Pro',
-        price: 4.99,
+        price: 499,
         unit: 'per month',
-        for: 'People handling a case on their own, or supporting someone else',
+        for: 'Someone handling their own case, or helping someone else through one.',
         includes: [
-          'Unlimited channels',
-          'Agent pre-fills and submits every form',
-          'Tamper-evident evidence vault with hash chain',
-          'Follow-up monitors with takedown confirmation',
-          'Pre-emptive protection arming (NCII / morphed content)',
-          'Printable case file for police and banks',
+          'File on unlimited places',
+          'The agent submits every form for you',
+          'A safe copy of every page and every reference number',
+          'We keep checking whether the content actually came down',
+          'One-click takedown for morphed images, and protection for the future',
         ],
-        limit: '10 monitored pages per case',
+        limit: '10 pages watched per case',
       },
       {
         id: 'team',
-        name: 'Redress for Teams',
-        price: 49,
-        unit: 'per seat / month',
-        for: 'NGOs, victim-support organisations, campus safety and community teams',
+        name: 'For organisations',
+        price: 4999,
+        unit: 'per person, per month',
+        for: 'NGOs, student unions, victim-support groups and campus safety teams.',
         includes: [
           'Everything in Pro',
-          'Multi-case workspace and assignment',
-          'Shared evidence vault with export',
-          'Escalation templates and SLA tracking',
+          'Handle many cases at once and assign them to people',
+          'One shared folder of evidence, ready to export',
+          'A list of which reports are overdue',
         ],
-        limit: 'Annual contract available',
+        limit: 'Yearly billing available',
       },
       {
         id: 'api',
-        name: 'Redress API (Banks & Platforms)',
-        price: 499,
-        unit: 'per month + usage',
-        for: 'Trust & Safety, fraud and compliance teams',
+        name: 'For banks and platforms',
+        price: 49999,
+        unit: 'per month, plus usage',
+        for: 'Trust and safety teams, fraud desks and compliance teams.',
         includes: [
-          'Redress orchestration API: incident in, regulator-ready case file out',
-          'Live channel graph per jurisdiction, refreshed on every request',
-          'SLA clocks and breach alerts',
-          'Audit-grade evidence chain exportable to regulators',
-          'Webhooks for case status and monitor events',
+          'One API call: incident in, regulator-ready case file out',
+          'The live map of where to report, for every country you operate in',
+          'Alerts when a report goes past its deadline',
+          'An audit trail they can hand to a regulator',
+          'Webhooks for every case and every takedown check',
         ],
-        limit: 'Usage billed at cost - free search allowance passed through',
+        limit: 'Usage billed at cost - the free search allowance is passed through',
       },
     ],
     unitEconomics: {
-      consumerProCost: '$0.31 per case in TinyFish credits (search is free, agent runs dominate)',
-      apiCost: '$0.02 - $0.25 per orchestrated case depending on channel count',
+      'What one report costs us': 'About Rs 25-50. That is the agent reading each form, filling it in and submitting it.',
+      'What searching costs us': 'Nothing. TinyFish allows 12,000 free searches a day.',
+      'What watching a page costs us': 'About Rs 12 a month for one page we keep checking.',
+      'So a Pro plan at Rs 499': 'Keeps about 90 paise of every rupee. It is why the free tier can stay free.',
     },
   }));
 

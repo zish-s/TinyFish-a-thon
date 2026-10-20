@@ -1,4 +1,4 @@
-import type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding } from '@redress/core';
+import type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding } from '@reclaim/core';
 
 export type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding };
 

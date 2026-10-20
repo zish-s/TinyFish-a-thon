@@ -90,7 +90,7 @@ const rows = labels
   .filter((r) => r.support > 0)
   .sort((a, b) => b.support - a.support);
 
-console.log('\nRedress triage classifier - stratified 5-fold cross-validation');
+console.log('\nReclaimYourNet triage classifier - stratified 5-fold cross-validation');
 console.log('='.repeat(74));
 console.log(
   `corpus: ${TRAINING_DATA.length} labelled examples | ${FOLDS} folds | ${evaluated} predictions | seed ${SEED}`,

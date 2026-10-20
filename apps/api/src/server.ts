@@ -14,5 +14,5 @@ app.log.info(
     tunnel: hasPublicTunnel ? config.publicBaseUrl : 'local only - the remote agent cannot reach the demo portals',
     publicBaseUrl: config.publicBaseUrl,
   },
-  'Redress API ready',
+  'ReclaimYourNet API ready',
 );

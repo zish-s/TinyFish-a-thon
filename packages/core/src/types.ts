@@ -1,5 +1,5 @@
 /**
- * Shared domain types for Redress.
+ * Shared domain types for ReclaimYourNet.
  *
  * The product is a "report once, file everywhere" pipeline:
  *   free-text incident  ->  explainable triage (ML)  ->  live channel discovery
