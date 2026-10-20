@@ -56,9 +56,12 @@ ReclaimYourNet:
    masked, and waits for you.
 6. **Files it**, stops before Submit, and asks again. You get the reference
    number.
-7. **Proves it** - every page read, every reference and every submission goes
+7. **Tells you it worked** - a green badge that says "Filled 3 of 3", plus the
+   agent's own summary of what it put in each field. You do not have to take
+   it on trust, and you do not have to watch a browser to check.
+8. **Proves it** - every page read, every reference and every submission goes
    into a SHA-256 hash chain you can export as a PDF case file.
-8. **Follows up** - a monitor re-checks the reported URL every six hours and
+9. **Follows up** - a monitor re-checks the reported URL every six hours and
    tells you whether the content actually came down.
 
 ## The part I am actually proud of
@@ -119,7 +122,7 @@ financial_fraud  p=0.024   <- technically the top label
 ```
 
 The fix was to move to a discriminative model - one-vs-rest logistic
-regression - and to stop pretending that a 250-example hand-labelled corpus can
+regression - and to stop pretending that a 223-example hand-labelled corpus can
 be pushed much further. The honest numbers, from a reproducible 5-fold
 cross-validation (`npm run eval`):
 
@@ -157,11 +160,19 @@ missing one can cost them their money.
   allowance; the Agent is $0.016/step; a Monitor is $0.005/run. A full report
   costs about $0.30-0.60 (Rs 25-50), which is what makes a Rs 499/month Pro
   tier work.
+- **A serverless platform forgets between requests.** My first deployment
+  returned 404 for every case. The fix was to stop treating the server as
+  stateful: the client carries the case, and each agent run is one request that
+  stays open and streams its events back on the same connection.
+- **Never store what someone told you.** There is no account and no database.
+  A report lives in the memory of the app and dies with the tab. The only copy
+  that outlives the session is the PDF you download yourself.
 
 ## Try it
 
-The demo portals are clones of the real forms, so the agent can be driven
-end-to-end without touching a live platform:
+Live: **https://reclaim-your-net.vercel.app**
+
+Or run it yourself:
 
 ```bash
 npm install
@@ -170,7 +181,9 @@ npx cloudflared tunnel --url http://localhost:4000   # so the cloud browser can 
 npm run dev
 ```
 
-The repo has the architecture, the evaluation script and the pitch deck.
+The demo forms are clones of the real ones, so the agent can be driven
+end-to-end without touching a live platform. The repo has the architecture, the
+evaluation script, the pitch deck and a timed demo script.
 
 ## What I would build next
 

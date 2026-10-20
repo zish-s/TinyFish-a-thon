@@ -94,10 +94,12 @@ form once and caches the field spec, splits filing into "fill" and "submit" so
 a human approval sits between them, and never runs an agent the user did not
 ask for.
 
-**How a judge can verify this in 30 seconds:** the app has a **sandbox** toggle.
-With it on, the agent drives a bundled clone of a real form instead of the real
-site - same agent, same goal, same structured output, same live preview. The
-agent really runs; only the target changes.
+**How a judge can verify this in 30 seconds:** the app has a **Practice mode**
+toggle. The real report forms on Instagram, X and the banks all ask you to log
+in, so a cloud agent cannot fill them - in practice mode the agent drives a
+bundled clone of each form instead. Same agent, same goal, same structured
+output, same live preview. The agent really runs; only the target changes. Turn it
+off and you get the live portal discovery instead.
 
 ---
 
@@ -147,15 +149,16 @@ parts an LLM cannot do and a hard-coded list does badly.
 
 ```
  browser (React 19 + Vite + Tailwind)
-   |  POST /api/cases                  -> explainable triage (local ML, in the API)
-   |  GET  /api/cases/:id/stream       -> SSE: steps, live browser URL, logs, evidence
-   |  POST /api/cases/:id/channels/:id/file -> the agent fills / submits
+   |  POST /api/cases        -> explainable triage (local ML, in the API)
+   |  POST /api/action       -> ONE request per agent run, streamed back:
+   |     { action, case }      the case travels with the request, and the run's
+   |                           events + result come back on one connection
    v
  API (Fastify 5, Node 20+, TypeScript)
    |- @reclaim/core   classifier, taxonomy, planner, redaction   (no network)
    |- pipeline        discover -> analyse -> review -> file -> monitor
    |- evidence        SHA-256 hash chain + PDFKit case file
-   |- store           SQLite when writable, in-memory otherwise (serverless safe)
+   |- store           in-memory only. A report is never written to disk.
    v
  TinyFish
    |- Search   live portal + helpline discovery
@@ -164,9 +167,83 @@ parts an LLM cannot do and a hard-coded list does badly.
    |- Monitor  follow-up checks on the reported URL
 ```
 
-**The key architectural choice:** the model decides *what kind of problem this
-is*; the agent decides *what to do about it on the actual web*; the human
-decides *what actually gets submitted*. No layer can silently submit anything.
+**Three decisions that matter:**
+
+1. **The model decides *what* this is; the agent decides *what to do* on the
+   actual web; the human decides *what gets submitted*.** No layer can submit
+   anything on its own.
+2. **One request per agent run, streamed back.** A serverless platform gives
+   every request a fresh instance with no memory of the last one - so the case
+   travels with the request, and the run, the live browser preview and the
+   result all travel on one connection.
+3. **Nothing is persisted.** No account, no user database, no analytics, no
+   tracking. A report lives in the memory of the app and dies with the tab.
+
+---
+
+## How it works, screen by screen
+
+A first-time visitor should never be confused, and every statement on the page
+should have an action attached to it. Here is the flow, in order.
+
+### 1. The question box (the first screen)
+
+One box: **"What happened?"** Type or dictate one sentence, press
+**Find where to report this**, or tap one of the three example chips. "Add my
+details" opens name / email / mobile / city, and the hint under each field says
+*either this or your mobile - one is enough*.
+
+### 2. Triage and the urgency banner
+
+A local model labels the incident and the page says what that means in a
+sentence, not a score: *"Money was moved. A freeze is only realistically possible
+if reported within 24 hours."*
+
+### 3. "How this works"
+
+Four plain steps, one click to open, so a first-time visitor always knows where
+they are.
+
+### 4. Your details
+
+Editable at any point. Change your name or number and every form below is
+rebuilt with the new values - and anything you typed by hand is kept.
+
+### 5. The panel that only asks for what is required
+
+A collapsible panel. The agent fills in everything it can; only fields a form
+marks as **required** need you. Contact fields are grouped - **"Email or mobile:
+either one is enough"** - and optional fields are labelled optional, so nobody
+fills them in.
+
+### 6. The coverage map
+
+Every place it has to be reported, in numbered groups: remove it from the
+platform, create a legal record, stop the money, take it down before it spreads,
+shrink the blast radius. Each row has the reason it applies, the clock on it, the
+live link, and its own action.
+
+### 7. The agent
+
+Press **Read the form** and a TinyFish agent opens the real page in a cloud
+browser and returns the fields it has *today*. You watch it in the live
+preview, or open it full size. The agent then fills the form and stops before
+Submit.
+
+### 8. "Filled 3 of 3"
+
+You do not have to take it on trust. The card shows a green badge with the count
+and the agent's own summary, field by field. If something genuinely required is
+missing, the badge is amber and names it.
+
+### 9. Your proof, and what we keep watching
+
+A SHA-256 hash chain over every page read, every reference number and every
+submission, downloadable as a case-file PDF a bank or a police station will
+accept. Then a TinyFish Monitor re-checks the reported page every six hours -
+because a report is not the same as a takedown.
+
+**A timed 2m30s run with the script is in [`docs/DEMO.md`](docs/DEMO.md).**
 
 ---
 
@@ -181,7 +258,7 @@ npm run dev               # API on :4000, web on :5173
 
 Open <http://localhost:5173>.
 
-### The sandbox toggle (recommended for the demo)
+### Practice mode (recommended for the demo)
 
 The TinyFish browser runs in the cloud, so it cannot reach `localhost`. Start a
 public tunnel and put the URL in `.env`:
@@ -192,7 +269,7 @@ npx cloudflared tunnel --url http://localhost:4000
 npm run dev
 ```
 
-Flip the **demo portals** toggle in the app header and the agent will drive the
+Flip the **Practice mode** toggle in the app header and the agent will drive the
 bundled clone of each form instead of the real site. Deterministic, fast, and
 impossible to break on a flaky venue wifi.
 
@@ -206,7 +283,8 @@ vercel env add TINYFISH_API_KEY production
 ```
 
 The deployment URL is detected automatically from the request, so the deployed
-app can drive its own demo portals and the agent can reach them.
+app can drive its own demo forms and the agent can reach them. A live
+deployment is at **https://reclaim-your-net.vercel.app**.
 
 ### Other commands
 
@@ -215,6 +293,7 @@ npm test        # 11 unit tests for the triage engine
 npm run eval    # reproducible 5-fold cross-validation of the classifier
 npm run build   # core -> api -> web
 npm start       # serve the built app from the API
+python scripts/build_pptx.py   # regenerate the submission .pptx from docs/PPT.md
 ```
 
 ---
@@ -236,11 +315,23 @@ apps/api/                     Fastify API
   src/tinyfish/client.ts      Search / Fetch / Agent(SSE) / Monitor / Wallet
   src/pipeline/orchestrator.ts  discover -> analyse -> file -> monitor
   src/casereport/pdf.ts       the case-file PDF
-  demo-portals/               sandbox clones of the real forms
+  src/routes.ts               /api/action - one streamed route for every action
+  demo-portals/               clones of the real forms, for practice mode
 apps/web/                     React + Vite + Tailwind client
+  src/components/Intake.tsx       the question box
+  src/components/HowItWorks.tsx   the four-step guide
+  src/components/YourDetails.tsx   editable name / email / mobile / city
+  src/components/MissingFields.tsx the collapsible "only what is required" panel
+  src/components/CoverageMap.tsx  the places to report, ranked
+  src/components/AgentTheatre.tsx the live browser + timeline + log
+  src/components/EvidenceVault.tsx the hash chain + the case file + monitors
+  src/components/Privacy.tsx      where your report actually goes
 api/[...path].ts              Vercel serverless entry
+scripts/build_pptx.py          builds the submission .pptx from docs/PPT.md
 docs/PPT.md                   the judge-facing pitch deck
 docs/PLAN.md                  what was built, and why
+docs/DEMO.md                  the timed demo script
+docs/DEVTO_POST.md            the social media post
 ```
 
 ---
@@ -275,12 +366,9 @@ disappears with it. Here is the complete list:
 | Your report | Nowhere. Not in a database, not on a server, not in the cloud. The only copy that outlives the session is the case file PDF you download. |
 | The details you approve | On the portal you approve, and nowhere else. That is the point of the product. |
 
-**"Delete this report"** clears it from memory, the evidence chain and the
-monitor list in one click.
-
-A developer-only `RECLAIM_PERSIST=1` environment variable turns on a local
-SQLite file for experimenting. It is off everywhere else, including on a
-deployment.
+Closing the tab is the delete button. A developer-only `RECLAIM_PERSIST=1`
+environment variable turns on a local SQLite file for experimenting; it is off
+everywhere else, including on a deployment.
 
 ---
 
@@ -300,16 +388,19 @@ browser records the microphone locally (MediaRecorder)
 ```
 
 The microphone has to be *yours* - a cloud browser cannot reach it - which is
-why the capture is local and only the transcription is delegated.
+why the capture is local and only the transcription is delegated. This is
+verified working end to end (29 seconds, agent reads the transcript out of the
+page), and the endpoint is in the API - the app currently ships with the
+browser's own *Dictate* button instead.
 
 **The honest caveat:** Chrome's built-in *Dictate* button sends your audio to
-Google, so it is not local. The **Record a voice note** button is the one that
+Google, so it is not local. The record-and-transcribe route above is the one that
 keeps the audio in the app until TinyFish transcribes it.
 
 The transcription step needs a speech-to-text service. Point `LLM_API_KEY` and
 `LLM_BASE_URL` at any OpenAI-compatible endpoint that serves
 `/audio/transcriptions` - Groq with `whisper-large-v3` is the quickest - and set
-`STT_MODEL`. With no key configured, the button says so plainly instead of
+`STT_MODEL`. With no key configured, the endpoint says so plainly instead of
 failing silently.
 
 ---
