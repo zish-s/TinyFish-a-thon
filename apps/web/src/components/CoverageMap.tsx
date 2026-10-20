@@ -124,25 +124,42 @@ export function CoverageMap({
                           {missing.length > 0 && <Tag tone="butter">{missing.length} to fill</Tag>}
                         </div>
                         <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{channel.why}</p>
-                        <p className="mt-1.5 font-mono text-[11.5px] text-muted-faint">{host}</p>
+                        <p className="mt-1.5 font-mono text-[11.5px] text-muted-faint">
+                          {host || 'looking for the official page...'}
+                        </p>
                       </button>
 
                       <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <a
-                          href={channel.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn-primary !px-4 !py-2 !text-[13px]"
-                        >
-                          {external ? 'Open' : 'Go to site'}
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => setOpen(isOpen ? null : channel.id)}
-                          className="btn-quiet !px-2.5 !py-2 !text-[13px]"
-                        >
-                          {isOpen ? 'Hide' : 'Details'}
-                        </button>
+                        {host ? (
+                          <>
+                            <a
+                              href={channel.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-primary !px-4 !py-2 !text-[13px]"
+                            >
+                              {external ? 'Open' : 'Go to site'}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setOpen(isOpen ? null : channel.id)}
+                              className="btn-quiet !px-2.5 !py-2 !text-[13px]"
+                            >
+                              {isOpen ? 'Hide' : 'Details'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <Tag tone="butter">no page found</Tag>
+                            <button
+                              type="button"
+                              onClick={() => onAnalyse(channel.id)}
+                              className="btn-outline !px-3 !py-1.5 !text-[12.5px]"
+                            >
+                              Look again
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -243,15 +260,12 @@ export function CoverageMap({
                           >
                             {copied === channel.id ? 'Copied' : 'Copy my details'}
                           </button>
-                          <a
-                            href={channel.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn-primary"
-                          >
-                            Open {host}
-                          </a>
-                          {!external && (
+                          {host && (
+                            <a href={channel.url} target="_blank" rel="noreferrer" className="btn-primary">
+                              Open {host}
+                            </a>
+                          )}
+                          {!external && host && (
                             <>
                               <button
                                 type="button"

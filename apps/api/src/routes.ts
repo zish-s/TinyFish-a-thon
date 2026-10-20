@@ -158,8 +158,7 @@ export async function registerRoutes(app: FastifyInstance) {
     return { started: true };
   });
 
-  app.post('/api/cases/:id/channels/:channelId/skip', async (request) => {
-    const { id, channelId } = request.params as { id: string; channelId: string };
+  app.post('/api/cases/:id/channels/:channelId/skip', async (request) => {    const { id, channelId } = request.params as { id: string; channelId: string };
     const caseFile = getCase(id);
     if (!caseFile) throw new Error('case not found');
     const channel = caseFile.plan.channels.find((c) => c.id === channelId);
@@ -272,7 +271,32 @@ export async function registerRoutes(app: FastifyInstance) {
     },
   }));
 
-  /* ---------------------------------------------------------- catalogue */
+  /* ---------------------------------------------------------- edit details */
+  app.post('/api/cases/:id/details', async (request) => {
+    const { id } = request.params as { id: string };
+    const body = z
+      .object({
+        name: z.string().optional(),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+      })
+      .parse(request.body ?? {});
+    if (!getCase(id)) throw new Error('case not found');
+    return { caseFile: orch.updateDetails(id, body) };
+  });
+
+  /* ---------------------------------------------------------- edit fields */
+  app.patch('/api/cases/:id/channels/:channelId/fields', async (request) => {
+    const { id, channelId } = request.params as { id: string; channelId: string };
+    const body = z.record(z.string(), z.string()).parse(request.body ?? {});
+    if (!getCase(id)) throw new Error('case not found');
+    const channel = orch.updateChannelFields(id, channelId, body);
+    return { channel, caseFile: getCase(id) };
+  });
+
+  /* ------------------------------------------------------------- catalogue */
   app.get('/api/catalogue', async () => ({
     incidentTypes: INCIDENT_TYPES,
     platforms: PLATFORM_CHANNELS,

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   buildDraft,
+  buildNarrative,
   buildPlan,
   discoveryQueryFor as coreDiscoveryQueryFor,
   knownDomainsFor,
@@ -237,7 +238,7 @@ export async function discoverChannels(caseId: string, sandbox: boolean, publicB
 
   await Promise.all(
     caseFile.plan.channels.map(async (channel) => {
-      const query = discoveryQueryFor(channel);
+      const query = channel.discoveryQuery ?? discoveryQueryFor(channel);
       try {
         const res = await tf.search(query, {
           location: caseFile.country === 'IN' ? 'IN' : 'US',
@@ -290,7 +291,6 @@ export async function discoverChannels(caseId: string, sandbox: boolean, publicB
 function discoveryQueryFor(channel: Channel): string {
   return coreDiscoveryQueryFor(channel.id, channel.name);
 }
-
 /* -------------------------------------------------------- form archaeology */
 
 /**
@@ -305,6 +305,13 @@ export async function analyseChannel(
 ): Promise<Channel> {
   const caseFile = getCase(caseId)!;
   const channel = channelOf(caseId, channelId);
+  if (!channel.url) {
+    channel.status = 'manual';
+    channel.error = 'We could not find an official page for this one. Open it from the link, or skip it.';
+    saveAndPublish(caseId);
+    log(caseId, 'warn', `${channel.name}: no live page found - marked as a manual step`);
+    return channel;
+  }
   const targetUrl =
     caseFile.sandbox ? demoPortalUrl(channel.id, publicBaseUrl) ?? channel.url : channel.url;
   const stepId = randomUUID();
@@ -443,6 +450,12 @@ export async function fileChannel(
   const channel = channelOf(caseId, channelId);
   const values = { ...channel.draft, ...(options.values ?? {}) };
   const missing = channel.requiredFields.filter((f) => f.required && !values[f.name]);
+  if (!channel.url) {
+    channel.status = 'manual';
+    channel.error = 'We could not find an official page for this one. Open it from the link, or skip it.';
+    saveAndPublish(caseId);
+    return channel;
+  }
   const targetUrl =
     caseFile.sandbox ? demoPortalUrl(channel.id, publicBaseUrl) ?? channel.url : channel.url;
 
@@ -704,4 +717,42 @@ export async function armMonitors(caseId: string, sandbox = false): Promise<Case
 
 export function monitorsFor(caseId: string) {
   return listMonitors(caseId);
+}
+
+/* ------------------------------------------------------- editing the case */
+
+/**
+ * The person changed their own details (name, phone, city...). Every draft is
+ * rebuilt so the forms carry the new values - but anything they typed by hand
+ * is kept, because re-typing a description is exactly the work we are trying
+ * to save them.
+ */
+export function updateDetails(caseId: string, profile: ReporterProfile): CaseFile {
+  const caseFile = getCase(caseId)!;
+  caseFile.profile = { ...caseFile.profile, ...profile };
+  const narrative = buildNarrative(caseFile.incident, caseFile.profile);
+  for (const channel of caseFile.plan.channels) {
+    channel.draft = {
+      ...buildDraft(channel.requiredFields, caseFile.incident, caseFile.profile, narrative),
+      ...(channel.overrides ?? {}),
+    };
+    channel.narrative = narrative;
+  }
+  saveAndPublish(caseId);
+  return getCase(caseId)!;
+}
+
+/** A single field was typed by hand. */
+export function updateChannelFields(
+  caseId: string,
+  channelId: string,
+  values: Record<string, string>,
+): Channel {
+  const caseFile = getCase(caseId)!;
+  const channel = caseFile.plan.channels.find((c) => c.id === channelId);
+  if (!channel) throw new Error(`Unknown channel ${channelId}`);
+  channel.draft = { ...channel.draft, ...values };
+  channel.overrides = { ...(channel.overrides ?? {}), ...values };
+  saveAndPublish(caseId);
+  return channel;
 }

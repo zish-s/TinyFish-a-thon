@@ -522,36 +522,6 @@ export const PROTECTION_CHANNELS: AuthorityChannelDef[] = [
     appliesTo: ['sextortion', 'image_misuse'],
   },
   {
-    id: 'redo',
-    name: 'Redo (pre-emptive protection)',
-    kind: 'protection',
-    country: 'GLOBAL',
-    url: 'https://www.redo.se/',
-    discoveryQuery: 'Redo pre-emptive protection block intimate images from being uploaded official',
-    purpose: 'Pre-emptive: blocks your intimate content from ever being uploaded to a large set of platforms, including AI image generators.',
-    fields: [{ name: 'details', label: 'Details', required: false, kind: 'textarea' }],
-    slaHours: 0,
-    slaNote: 'Takes effect immediately and prevents the leak rather than cleaning it up.',
-    requiresLogin: false,
-    minUrgency: 'any',
-    appliesTo: ['sextortion', 'image_misuse'],
-  },
-  {
-    id: 'desexualise',
-    name: 'Desexualise (before you upload)',
-    kind: 'protection',
-    country: 'GLOBAL',
-    url: 'https://desexualise.ai/',
-    discoveryQuery: 'Desexualise official on device blur intimate photos before sharing',
-    purpose: 'Blurs intimate regions on your own device before you upload or send a photo, so the original never leaves your phone.',
-    fields: [{ name: 'upload', label: 'Photo to sanitise', required: true, kind: 'file' }],
-    slaHours: 0,
-    slaNote: 'Runs on-device - the unblurred image is never uploaded anywhere.',
-    requiresLogin: false,
-    minUrgency: 'any',
-    appliesTo: ['image_misuse', 'sextortion'],
-  },
-  {
     id: 'c2pa',
     name: 'Content Credentials (C2PA) - sign your images',
     kind: 'protection',
@@ -657,6 +627,154 @@ export const PROTECTION_CHANNELS: AuthorityChannelDef[] = [
   },
 ];
 
+/**
+ * Indian cities and districts, mapped to the state whose police and state
+ * commissions have jurisdiction over them.
+ *
+ * Why this matters: a First Information Report can only be registered by the
+ * local station, and a State Women's Commission is a different body from the
+ * national one. So the plan has to know which state the complainant is in -
+ * otherwise the advice is "report to the police" without saying which police.
+ */
+export const INDIA_LOCATIONS: Record<string, { state: string; stateCode: string }> = {
+  delhi: { state: 'Delhi', stateCode: 'DL' },
+  gurugram: { state: 'Haryana', stateCode: 'HR' },
+  gurgaon: { state: 'Haryana', stateCode: 'HR' },
+  faridabad: { state: 'Haryana', stateCode: 'HR' },
+  panipat: { state: 'Haryana', stateCode: 'HR' },
+  karnal: { state: 'Haryana', stateCode: 'HR' },
+  hisar: { state: 'Haryana', stateCode: 'HR' },
+  rohtak: { state: 'Haryana', stateCode: 'HR' },
+  sonipat: { state: 'Haryana', stateCode: 'HR' },
+  ambala: { state: 'Haryana', stateCode: 'HR' },
+  mumbai: { state: 'Maharashtra', stateCode: 'MH' },
+  pune: { state: 'Maharashtra', stateCode: 'MH' },
+  nashik: { state: 'Maharashtra', stateCode: 'MH' },
+  thane: { state: 'Maharashtra', stateCode: 'MH' },
+  navimumbai: { state: 'Maharashtra', stateCode: 'MH' },
+  pimpri: { state: 'Maharashtra', stateCode: 'MH' },
+  nagpur: { state: 'Maharashtra', stateCode: 'MH' },
+  kolhapur: { state: 'Maharashtra', stateCode: 'MH' },
+  aurangabad: { state: 'Maharashtra', stateCode: 'MH' },
+  solapur: { state: 'Maharashtra', stateCode: 'MH' },
+  bengaluru: { state: 'Karnataka', stateCode: 'KA' },
+  bangalore: { state: 'Karnataka', stateCode: 'KA' },
+  mysore: { state: 'Karnataka', stateCode: 'KA' },
+  mangaluru: { state: 'Karnataka', stateCode: 'KA' },
+  hubballi: { state: 'Karnataka', stateCode: 'KA' },
+  belagavi: { state: 'Karnataka', stateCode: 'KA' },
+  dharwad: { state: 'Karnataka', stateCode: 'KA' },
+  hyderabad: { state: 'Telangana', stateCode: 'TS' },
+  secunderabad: { state: 'Telangana', stateCode: 'TS' },
+  warangal: { state: 'Telangana', stateCode: 'TS' },
+  guntur: { state: 'Andhra Pradesh', stateCode: 'AP' },
+  visakhapatnam: { state: 'Andhra Pradesh', stateCode: 'AP' },
+  vijayawada: { state: 'Andhra Pradesh', stateCode: 'AP' },
+  nellore: { state: 'Andhra Pradesh', stateCode: 'AP' },
+  tirupati: { state: 'Andhra Pradesh', stateCode: 'AP' },
+  chennai: { state: 'Tamil Nadu', stateCode: 'TN' },
+  coimbatore: { state: 'Tamil Nadu', stateCode: 'TN' },
+  madurai: { state: 'Tamil Nadu', stateCode: 'TN' },
+  tiruchirappalli: { state: 'Tamil Nadu', stateCode: 'TN' },
+  trichy: { state: 'Tamil Nadu', stateCode: 'TN' },
+  salem: { state: 'Tamil Nadu', stateCode: 'TN' },
+  tiruppur: { state: 'Tamil Nadu', stateCode: 'TN' },
+  erode: { state: 'Tamil Nadu', stateCode: 'TN' },
+  vellore: { state: 'Tamil Nadu', stateCode: 'TN' },
+  thanjavur: { state: 'Tamil Nadu', stateCode: 'TN' },
+  kolkata: { state: 'West Bengal', stateCode: 'WB' },
+  howrah: { state: 'West Bengal', stateCode: 'WB' },
+  siliguri: { state: 'West Bengal', stateCode: 'WB' },
+  asansol: { state: 'West Bengal', stateCode: 'WB' },
+  bardhaman: { state: 'West Bengal', stateCode: 'WB' },
+  patna: { state: 'Bihar', stateCode: 'BR' },
+  gaya: { state: 'Bihar', stateCode: 'BR' },
+  muzaffarpur: { state: 'Bihar', stateCode: 'BR' },
+  lucknow: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  noida: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  kanpur: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  agra: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  varanasi: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  prayagraj: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  allahabad: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  meerut: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  ghaziabad: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  moradabad: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  bareilly: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  saharanpur: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  aligarh: { state: 'Uttar Pradesh', stateCode: 'UP' },
+  jaipur: { state: 'Rajasthan', stateCode: 'RJ' },
+  jodhpur: { state: 'Rajasthan', stateCode: 'RJ' },
+  udaipur: { state: 'Rajasthan', stateCode: 'RJ' },
+  kota: { state: 'Rajasthan', stateCode: 'RJ' },
+  ajmer: { state: 'Rajasthan', stateCode: 'RJ' },
+  ahmedabad: { state: 'Gujarat', stateCode: 'GJ' },
+  surat: { state: 'Gujarat', stateCode: 'GJ' },
+  vadodara: { state: 'Gujarat', stateCode: 'GJ' },
+  rajkot: { state: 'Gujarat', stateCode: 'GJ' },
+  bhopal: { state: 'Madhya Pradesh', stateCode: 'MP' },
+  indore: { state: 'Madhya Pradesh', stateCode: 'MP' },
+  gwalior: { state: 'Madhya Pradesh', stateCode: 'MP' },
+  jabalpur: { state: 'Madhya Pradesh', stateCode: 'MP' },
+  raipur: { state: 'Chhattisgarh', stateCode: 'CG' },
+  bhilai: { state: 'Chhattisgarh', stateCode: 'CG' },
+  bhubaneswar: { state: 'Odisha', stateCode: 'OD' },
+  cuttack: { state: 'Odisha', stateCode: 'OD' },
+  rourkela: { state: 'Odisha', stateCode: 'OD' },
+  ranchi: { state: 'Jharkhand', stateCode: 'JH' },
+  jamshedpur: { state: 'Jharkhand', stateCode: 'JH' },
+  dhanbad: { state: 'Jharkhand', stateCode: 'JH' },
+  bokaro: { state: 'Jharkhand', stateCode: 'JH' },
+  guwahati: { state: 'Assam', stateCode: 'AS' },
+  dibrugarh: { state: 'Assam', stateCode: 'AS' },
+  jorhat: { state: 'Assam', stateCode: 'AS' },
+  shillong: { state: 'Meghalaya', stateCode: 'ML' },
+  imphal: { state: 'Manipur', stateCode: 'MN' },
+  kohima: { state: 'Nagaland', stateCode: 'NL' },
+  aizawl: { state: 'Mizoram', stateCode: 'MZ' },
+  itanagar: { state: 'Arunachal Pradesh', stateCode: 'AR' },
+  gangtok: { state: 'Sikkim', stateCode: 'SK' },
+  srinagar: { state: 'Jammu and Kashmir', stateCode: 'JK' },
+  jammu: { state: 'Jammu and Kashmir', stateCode: 'JK' },
+  chandigarh: { state: 'Chandigarh', stateCode: 'CH' },
+  ludhiana: { state: 'Punjab', stateCode: 'PB' },
+  amritsar: { state: 'Punjab', stateCode: 'PB' },
+  jalandhar: { state: 'Punjab', stateCode: 'PB' },
+  patiala: { state: 'Punjab', stateCode: 'PB' },
+  dehradun: { state: 'Uttarakhand', stateCode: 'UK' },
+  haridwar: { state: 'Uttarakhand', stateCode: 'UK' },
+  shimla: { state: 'Himachal Pradesh', stateCode: 'HP' },
+  thiruvananthapuram: { state: 'Kerala', stateCode: 'KL' },
+  kochi: { state: 'Kerala', stateCode: 'KL' },
+  thrissur: { state: 'Kerala', stateCode: 'KL' },
+  kannur: { state: 'Kerala', stateCode: 'KL' },
+  malappuram: { state: 'Kerala', stateCode: 'KL' },
+  kozhikode: { state: 'Kerala', stateCode: 'KL' },
+  portblair: { state: 'Andaman and Nicobar Islands', stateCode: 'AN' },
+};
+
+export interface LocationMatch {
+  city: string;
+  state: string;
+  stateCode: string;
+}
+
+/** Finds the state that has jurisdiction over a city, if we know it. */
+export function lookupLocation(city?: string): LocationMatch | null {
+  if (!city) return null;
+  const key = city.toLowerCase().replace(/[^a-z]/g, '');
+  if (!key) return null;
+  if (INDIA_LOCATIONS[key]) {
+    return { city, state: INDIA_LOCATIONS[key].state, stateCode: INDIA_LOCATIONS[key].stateCode };
+  }
+  for (const [name, value] of Object.entries(INDIA_LOCATIONS)) {
+    if (key.startsWith(name) || name.startsWith(key)) {
+      return { city, state: value.state, stateCode: value.stateCode };
+    }
+  }
+  return null;
+}
+
 /** Jurisdiction-specific emergency guidance surfaced to the user. */
 export const EMERGENCY_BY_COUNTRY: Record<string, { police: string; cyber: string; note: string }> = {
   IN: { police: '112', cyber: '1930 (cyber financial fraud) / 1090 (women & children)', note: 'Dial 112 for imminent danger.' },
@@ -711,8 +829,6 @@ export function discoveryQueryFor(channelId: string, channelName: string): strin
     takedown_ccri: 'Takedown CCRI official remove intimate images deepfake',
     stopncci: 'StopNCII official hash based removal AI morphed content',
     removeher: 'RemoveHer official remove non consensual intimate images',
-    redo: 'Redo official pre-emptive protection block intimate image upload',
-    desexualise: 'Desexualise official on device blur intimate photos',
     c2pa: 'C2PA Content Credentials official sign images provenance',
     google_url_removal: 'Google official request removal of a URL search results form',
     bing_url_removal: 'Bing official remove URL from index webmaster form',

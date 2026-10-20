@@ -26,7 +26,6 @@ export interface Profile {
   address?: string;
   city?: string;
 }
-
 const json = async <T,>(res: Response): Promise<T> => {
   if (!res.ok) {
     const text = await res.text();
@@ -72,6 +71,20 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     }).then((r) => json<{ ok: boolean }>(r)),
+
+  updateDetails: (id: string, profile: Profile) =>
+    fetch(`/api/cases/${id}/details`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    }).then((r) => json<{ caseFile: CaseFile }>(r)),
+
+  updateFields: (id: string, channelId: string, values: Record<string, string>) =>
+    fetch(`/api/cases/${id}/channels/${channelId}/fields`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values),
+    }).then((r) => json<{ channel: Channel; caseFile: CaseFile }>(r)),
 
   armMonitors: (id: string) =>
     fetch(`/api/cases/${id}/monitors`, {

@@ -140,17 +140,23 @@ missing one can cost them their money.
   valuable screen in ReclaimYourNet is not the list of things to do, it is the list of
   things you have *not* covered.
 - **"Pre-emptive" beats "reactive".** Take It Down, StopNCII, Takedown,
-  RemoveHer, Redo and C2PA let you register a photo *before* it is misused and
+  RemoveHer and C2PA let you register a photo *before* it is misused and
   have it pulled down later - including AI-morphed copies. Almost nobody knows
   these exist. ReclaimYourNet surfaces them at the moment they are useful.
+- **Jurisdiction is not a detail.** A FIR can only be registered by the police
+  station with jurisdiction over where you live. If you type "Gurugram", the
+  agent finds `gurgaon.haryanapolice.gov.in/cyber-crime` - the district's own
+  page - instead of a generic national portal. A hard-coded list can never do
+  that, and it is the difference between a useful pointer and a dead end.
 - **Split "fill" from "submit".** Two approvals instead of one, and the agent
   never gets to decide on its own what gets sent in a victim's name.
 - **Make the model say no.** The agent is instructed to leave a required field
   empty and report it rather than guess. ReclaimYourNet shows that gap to the user
   instead of hiding it. The blank field in the UI is a feature.
 - **Measure the credits.** TinyFish Search and Fetch are free within the daily
-  allowance; the Agent is $0.016/step; a Monitor is $0.005/run. A full case
-  costs about $0.30-0.60, which is what makes a $4.99/month Pro tier work.
+  allowance; the Agent is $0.016/step; a Monitor is $0.005/run. A full report
+  costs about $0.30-0.60 (Rs 25-50), which is what makes a Rs 499/month Pro
+  tier work.
 
 ## Try it
 

@@ -6,7 +6,10 @@ import { CoverageMap } from './components/CoverageMap';
 import { AgentTheatre } from './components/AgentTheatre';
 import { EvidenceVault } from './components/EvidenceVault';
 import { Pricing } from './components/Pricing';
-import { Dot, Tag } from './components/ui';
+import { HowItWorks } from './components/HowItWorks';
+import { YourDetails } from './components/YourDetails';
+import { MissingFields } from './components/MissingFields';
+import { Dot, SectionTitle, Tag } from './components/ui';
 import { Net } from './components/Doodles';
 
 export default function App() {
@@ -212,7 +215,37 @@ export default function App() {
               )}
             </div>
 
-            <section id="report" className="scroll-mt-24">
+            <div className="space-y-5">
+              <HowItWorks />
+
+              <YourDetails
+                profile={caseFile.profile ?? {}}
+                onSave={async (profile) => {
+                  const res = await api.updateDetails(caseFile.id, profile);
+                  setCaseFile(res.caseFile);
+                }}
+              />
+
+              <MissingFields
+                channels={caseFile.plan.channels}
+                profileFilled={Boolean(caseFile.profile?.name && caseFile.profile?.phone)}
+                onSave={async (channelId, fieldName, value) => {
+                  const res = await api.updateFields(caseFile.id, channelId, { [fieldName]: value });
+                  setCaseFile(res.caseFile);
+                }}
+              />
+            </div>
+
+            <section id="report" className="mt-12 scroll-mt-24">
+              <SectionTitle
+                eyebrow="Step 2"
+                title="Every place this has to be reported"
+                action={
+                  <span className="text-[13px] text-muted">
+                    Open one, read the form, approve, and we file it.
+                  </span>
+                }
+              />
               <CoverageMap
                 channels={caseFile.plan.channels}
                 gaps={caseFile.plan.gaps}
@@ -226,10 +259,28 @@ export default function App() {
             </section>
 
             <section id="agent" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
+              <SectionTitle
+                eyebrow="Step 3"
+                title="What the agent did"
+                action={
+                  <span className="text-[13px] text-muted">
+                    You watch the agent work in its own browser, then it stops and asks.
+                  </span>
+                }
+              />
               <AgentTheatre steps={steps} logs={logs} streamingUrl={streamingUrl} />
             </section>
 
             <section id="evidence" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
+              <SectionTitle
+                eyebrow="Step 4"
+                title="Your proof, and what we keep watching"
+                action={
+                  <span className="text-[13px] text-muted">
+                    A signed record of what was filed, and a check that it stays gone.
+                  </span>
+                }
+              />
               <EvidenceVault
                 evidence={caseFile.evidence}
                 monitors={monitors}
@@ -243,6 +294,11 @@ export default function App() {
             </section>
 
             <section id="plans" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
+              <SectionTitle
+                eyebrow="For reference"
+                title="What it costs"
+                action={<span className="text-[13px] text-muted">Free for you. The money comes from the organisations.</span>}
+              />
               <Pricing />
             </section>
           </div>

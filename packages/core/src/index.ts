@@ -1,6 +1,5 @@
 export * from './types.js';
-export * from './taxonomy.js';
-export * from './triage.js';
+export * from './taxonomy.js';export * from './triage.js';
 export * from './planner.js';
 export { IncidentClassifier, classifier, LABEL_THRESHOLD } from './ml/classifier.js';
 export type { Prediction, LabelModel } from './ml/classifier.js';

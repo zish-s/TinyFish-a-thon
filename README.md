@@ -52,7 +52,7 @@ The hard part was never filling in a form. It is:
 | --- | --- | --- |
 | 1 | **Describe** - one free-text or spoken description | Victim |
 | 2 | **Triage** - a local, explainable model labels the harm, extracts entities and masks sensitive values | ReclaimYourNet (offline ML) |
-| 3 | **Plan** - labels become a prioritised set of routes, each with a reason and a deadline | ReclaimYourNet (rules + ML) |
+| 3 | **Plan** - labels become a prioritised set of routes, each with a reason and a deadline. If we know the city, it also finds **that city's** police station and **that state's** Commission - a FIR can only be registered locally | ReclaimYourNet (rules + ML) |
 | 4 | **Discover** - a web agent searches the live web for the *current* official portal for each route | **TinyFish Search** |
 | 5 | **Read** - the agent opens the real page and reads the form it actually has today | **TinyFish Web Agent** |
 | 6 | **Review** - the victim sees every value that will be typed, with sensitive fields masked | Victim |
@@ -80,7 +80,7 @@ We use four TinyFish surfaces, each for a job a static implementation cannot do.
 
 | Surface | Where | What it replaces |
 | --- | --- | --- |
-| **Search API** | `apps/api/src/pipeline/orchestrator.ts` &rarr; `discoverChannels()` | A hard-coded list of portal URLs that goes stale. At report time the agent asks the live web where the current official reporting page is, per country, and scores results for officialness (`.gov`, `.nic.in`, known platform domains). |
+| **Search API** | `apps/api/src/pipeline/orchestrator.ts` &rarr; `discoverChannels()` | A hard-coded list of portal URLs that goes stale. At report time the agent asks the live web where the current official reporting page is, per country, and scores results for officialness (`.gov`, `.nic.in`, known platform domains). **Give it a city and the query becomes city-specific** - type *Gurugram* and the agent finds `gurgaon.haryanapolice.gov.in/cyber-crime` (the district's own cyber crime page) instead of a generic national portal. |
 | **Web Agent (SSE)** | `orchestrator.ts` &rarr; `analyseChannel()` / `fileChannel()` | A hard-coded form schema. The agent opens the real page and returns the **actual** fields, labels, required flags, dropdown options and evidence requests through `output_schema`; then types the approved values and submits. The `PROGRESS` and `STREAMING_URL` SSE events are streamed straight into the user's browser as a **live view of the agent working**. |
 | **Fetch API** | evidence capture | Downloading a page to attach to the case file. Also the substrate of the Page Monitor. |
 | **Monitor API** | `orchestrator.ts` &rarr; `armMonitors()` | "We filed it and hoped." A Page Monitor re-checks the reported URL every 6 hours; a Topic Monitor watches for a **clone** of the impersonation account appearing somewhere new. |
@@ -267,20 +267,23 @@ Free for victims, paid for the organisations that receive the reports.
 
 | Plan | Price | Who |
 | --- | --- | --- |
-| Free | $0 | Anyone reporting one incident |
-| Pro | $4.99 / month | Someone handling a case alone |
-| Team | $49 / seat / month | NGOs, victim-support orgs, campus safety |
-| **ReclaimYourNet API** | **$499 / month + usage** | **Trust & Safety, fraud and compliance teams** |
+| Free | Rs 0 | Anyone reporting something that happened to them |
+| Pro | Rs 499 / month | Someone handling their own case, or helping someone else through one |
+| For organisations | Rs 4,999 / person / month | NGOs, student unions, victim-support groups, campus safety |
+| **ReclaimYourNet API** | **Rs 49,999 / month + usage** | **Trust & Safety, fraud and compliance teams** |
 
-**Unit economics (measured against the live API, not guessed):**
+**What it costs us to run this (measured against the live API, not guessed):**
 
 | Line | Cost |
 | --- | --- |
-| TinyFish Search | $0 - free within the daily allowance (12,000/day) |
-| TinyFish Fetch | $0 per URL - free within the daily allowance |
-| TinyFish Agent | $0.016 per step |
-| TinyFish Monitor | $0.005 per run (~$0.15/month for a daily check) |
-| **A full case** (2 platform + 2 authority channels, read + fill + submit) | **~$0.30 - $0.60** |
+| TinyFish Search | Rs 0 - free within the daily allowance (12,000/day) |
+| TinyFish Fetch | Rs 0 per URL - free within the daily allowance |
+| TinyFish Agent | Rs 1.35 per step |
+| TinyFish Monitor | Rs 0.42 per run (~Rs 12 a month for a daily check) |
+| **A full report** (read the form, fill it and submit it, on every channel) | **Rs 25-50** |
+
+A Pro plan at Rs 499 keeps about 90 paise of every rupee. That is why the free
+tier can stay free.
 
 **Why the API tier has a buyer:** a bank's fraud desk is measured on
 complaint-handling SLA and on losses recovered; a platform's trust & safety

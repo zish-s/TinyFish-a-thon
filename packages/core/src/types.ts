@@ -136,10 +136,16 @@ export interface Channel {
   trust: number;
   /** 'now' = act on this first, 'later' = worth doing once the urgent ones are done. */
   priority: 'now' | 'later';
+  /** Overrides the search query used to find this channel's live page. */
+  discoveryQuery?: string;
+  /** The state or region this channel has jurisdiction over. */
+  region?: string;
   /** Other live results found while discovering this channel. */
   alternates?: { title: string; url: string }[];
   /** Draft values keyed by field name, ready for review. */
   draft: Record<string, string>;
+  /** Values the person typed themselves - kept when the draft is rebuilt. */
+  overrides?: Record<string, string>;
   /** Free-text narrative built from the incident. */
   narrative?: string;
   /** Reference / ticket number returned after filing. */

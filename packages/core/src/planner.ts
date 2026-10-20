@@ -6,7 +6,14 @@ import type {
   IncidentLabel,
   TriageResult,
 } from './types.js';
-import { AUTHORITY_CHANNELS, EMERGENCY_BY_COUNTRY, PLATFORM_CHANNELS, PROTECTION_CHANNELS, labelName } from './taxonomy.js';
+import {
+  AUTHORITY_CHANNELS,
+  EMERGENCY_BY_COUNTRY,
+  PLATFORM_CHANNELS,
+  PROTECTION_CHANNELS,
+  labelName,
+  lookupLocation,
+} from './taxonomy.js';
 import type { ReporterProfile } from './triage.js';
 
 const PLATFORM_ENTITY_TO_CHANNEL: Record<string, string> = {
@@ -315,6 +322,71 @@ export function buildPlan(triage: TriageResult, profile: ReporterProfile, countr
       priority: 'now',
       draft: {},
     });
+  }
+
+  // ---- local / state level channels -------------------------------------
+  // A FIR can only be registered by the local station, and a State Women's
+  // Commission is a different body from the national one. So when we know
+  // which city the person is in, the plan points at *their* police and
+  // *their* state commission - both resolved live, not hard-coded.
+  if (country === 'IN' && profile.city) {
+    const loc = lookupLocation(profile.city);
+    if (loc) {
+      channels.push({
+        id: 'local_police_state',
+        name: `${loc.city} police - ${loc.state}`,
+        kind: 'authority',
+        jurisdiction: loc.stateCode,
+        url: '',
+        region: loc.state,
+        discoveryQuery: `${loc.city} police official site online FIR cyber crime cell ${loc.state}`,
+        why: `A First Information Report has to come from the police station with jurisdiction over where you are - that is ${loc.city} police, ${loc.state}. Nobody else can register it for you.`,
+        triggeredBy: activeLabels.slice(0, 2),
+        requiredFields: [
+          { name: 'name', label: 'Name', required: true, kind: 'text' },
+          { name: 'mobile', label: 'Mobile', required: true, kind: 'tel' },
+          { name: 'address', label: 'Address', required: true, kind: 'textarea' },
+          { name: 'description', label: 'Narrative of the incident', required: true, kind: 'textarea' },
+          { name: 'incident_date', label: 'Date of incident', required: true, kind: 'date' },
+        ],
+        requiredEvidence: ['Screenshots of the content', 'The exact link', 'Your ID proof'],
+        slaHours: 24,
+        slaNote: 'An FIR is the record everything else depends on. It is also the only thing a bank or a court will ask for.',
+        status: 'planned',
+        source: 'seed',
+        trust: 0.9,
+        priority: 'now',
+        draft: {},
+      });
+
+      if (activeLabels.includes('harassment') || activeLabels.includes('stalking')) {
+        channels.push({
+          id: 'state_women_commission',
+          name: `${loc.state} State Commission for Women`,
+          kind: 'authority',
+          jurisdiction: loc.stateCode,
+          url: '',
+          region: loc.state,
+          discoveryQuery: `${loc.state} State Commission for Women official complaint portal`,
+          why: `The State Commission for Women can act on harassment and stalking in ${loc.state} without you having to go to a police station first.`,
+          triggeredBy: activeLabels.filter((l) => l === 'harassment' || l === 'stalking'),
+          requiredFields: [
+            { name: 'name', label: 'Name', required: true, kind: 'text' },
+            { name: 'email', label: 'Email', required: true, kind: 'email' },
+            { name: 'mobile', label: 'Mobile', required: true, kind: 'tel' },
+            { name: 'description', label: 'Complaint', required: true, kind: 'textarea' },
+          ],
+          requiredEvidence: ['Screenshots', 'Dates of the incidents'],
+          slaHours: 72,
+          slaNote: 'Usually a few weeks. File it alongside the police complaint, not instead of it.',
+          status: 'planned',
+          source: 'seed',
+          trust: 0.9,
+          priority: 'now',
+          draft: {},
+        });
+      }
+    }
   }
 
   // ---- drafts ------------------------------------------------------------

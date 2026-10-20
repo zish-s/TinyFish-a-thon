@@ -64,7 +64,7 @@ organisations, no single place that would have told the victim to do all seven.
 | --- | --- | --- |
 | 1. Describe | One free-text or spoken description of the incident | Victim |
 | 2. Triage | A local, explainable model labels the incident type, extracts entities (platform, amount, date, handles) and masks sensitive values | ReclaimYourNet (offline ML) |
-| 3. Plan | A channel planner turns the labels into a prioritised set of routes: platform / authority / financial / pre-emptive protection / de-indexing, each with a reason and a deadline | ReclaimYourNet (rules + ML) |
+| 3. Plan | A channel planner turns the labels into a prioritised set of routes: platform / authority / financial / pre-emptive protection / de-indexing, each with a reason and a deadline. If we know your city it also finds **your** police station and **your** State Commission - a FIR can only be registered locally | ReclaimYourNet (rules + ML) |
 | 4. Discover | A **TinyFish web agent** searches the live web for the *current* official portal, helpline and reporting page for each route | TinyFish Search |
 | 5. Read | The same agent opens the real page and **reads the form it actually has today** - fields, labels, required flags, evidence requested | TinyFish Web Agent |
 | 6. Review | The victim sees every value that will be typed, with sensitive fields masked, and approves or edits | Victim |
@@ -154,7 +154,7 @@ that is exactly the part an LLM cannot do and a hard-coded list does badly.
 
 | TinyFish surface | Where it is used | What it replaces |
 | --- | --- | --- |
-| **Search API** | `apps/api/src/pipeline/orchestrator.ts` -> `discoverChannels()` | A hard-coded list of portal URLs that goes stale. At report time the agent asks the live web where the current official reporting page is, per country, and scores the results for officialness (`.gov`, `.nic.in`, known platform domains). |
+| **Search API** | `apps/api/src/pipeline/orchestrator.ts` -> `discoverChannels()` | A hard-coded list of portal URLs that goes stale. At report time the agent asks the live web where the current official reporting page is, per country, and scores the results for officialness (`.gov`, `.nic.in`, known platform domains). If the complainant gives a city, the query becomes city-specific - type *Gurugram* and the agent finds `gurgaon.haryanapolice.gov.in/cyber-crime`, the district's own cyber crime page, instead of a generic national portal. |
 | **Web Agent (SSE)** | `orchestrator.ts` -> `analyseChannel()` and `fileChannel()` | A hard-coded form schema. The agent opens the real page and returns the *actual* fields, labels, required flags and evidence requests via `output_schema`; then, after approval, types the approved values and submits. The `PROGRESS` and `STREAMING_URL` SSE events are streamed straight into the user's browser as a live view of the agent working. |
 | **Fetch API** | evidence capture | Downloading a page to attach to the case file. Also the substrate of the Page Monitor. |
 | **Monitor API** | `orchestrator.ts` -> `armMonitors()` | "We filed it and hoped." A Page Monitor re-checks the reported URL every 6 hours and reports a change; a Topic Monitor watches for a *clone* of the impersonation account appearing somewhere new. |
@@ -205,26 +205,29 @@ decides *what actually gets submitted*. No layer can silently submit anything.
 ## Slide 8 - Demo (3 minutes)
 
 1. **00:00 - Describe.** Type (or dictate) one sentence about a fake account
-   using your photo and asking your friends for money. Pick "imagine" examples
-   from the home screen.
+   using your photo and asking your friends for money. Pick one of the example
+   chips on the home screen.
 2. **00:20 - Triage.** The model labels it (image misuse, impersonation, doxxing,
-   financial fraud), shows the tokens that drove each label, flags "money lost"
-   as a 24-hour clock, and masks the phone number in the summary.
-3. **00:45 - Coverage map.** 8 routes ranked "do now" vs "also consider", each
+   financial fraud), the urgency banner explains *why* it is time-sensitive, and
+   your phone number is masked in every summary.
+3. **00:40 - Your details.** The box at the top is editable at any point. Add a
+   name, email, mobile and city once, and every form below fills itself.
+4. **00:55 - Coverage map.** 8 routes ranked "do now" vs "also consider", each
    with the reason it applies and its deadline. The gap panel says what you
    *have not* covered: "no police FIR - a cybercrime complaint is not enough, only
-   an FIR starts the clock on a refund claim."
-4. **01:15 - Watch it work.** Press "Read the live form" on Instagram. The
-   TinyFish agent opens the page in a remote browser; the browser appears
-   live in the app, and the timeline shows what it is doing. It comes back with
-   the *actual* fields the page has today.
-5. **01:45 - Review and file.** Every value the agent will type is shown, with
-   the blank ones highlighted ("needs your input"). Approve, then "Fill &
-   submit". The agent types, stops, submits, and returns the reference number
-   - which lands in the evidence vault with a hash.
-6. **02:15 - Proof and follow-up.** Download the case file PDF (incident
-   narrative, triage with reasons, every channel and its reference number, the
-   hash chain). Arm follow-up: a monitor now watches the reported URL.
+   an FIR starts the clock on a refund claim." With a city, the local station is
+   the one it finds (`gurgaon.haryanapolice.gov.in/cyber-crime`).
+5. **01:20 - Watch it work.** Press "Read the form" on Instagram. The TinyFish
+   agent opens the page in a remote browser; the browser appears live in the
+   app, and the timeline shows what it is doing. It comes back with the *actual*
+   fields the page has today, dropdown options included.
+6. **01:50 - Review and file.** Every value the agent will type is shown, with
+   the blank ones highlighted in yellow and fillable right there. Approve, then
+   "Fill & submit". The agent types, stops, submits, and returns the reference
+   number - which lands in the evidence vault with a hash.
+7. **02:20 - Proof and follow-up.** Download the case file PDF (incident
+   narrative, every channel and its reference number, the hash chain). Arm
+   follow-up: a monitor now watches the reported URL.
 
 ---
 
@@ -237,9 +240,9 @@ decides *what actually gets submitted*. No layer can silently submit anything.
   record, or that a bank dispute has a 24-hour freeze window, or that an FIR is
   required for a refund claim.
 - **Pre-emptive protection is mainstreamed.** Take It Down, StopNCII, Takedown,
-  RemoveHer, Redo, C2PA and on-device blurring are near-unknown to the public.
-  We surface them *at the moment they are useful* - and we say so in the product,
-  because most people do not know these exist.
+  RemoveHer and C2PA are near-unknown to the public. We surface them *at the
+  moment they are useful* - and we say so in the product, because most people do
+  not know these exist.
 - **Proof becomes a by-product.** A tamper-evident evidence chain and a printable
   case file make a report usable with a bank, a police station or a lawyer.
 - **A measurable metric:** of the gaps we detect, what share did the user close?
@@ -254,24 +257,24 @@ reports.**
 
 | Plan | Price | Who | What they get |
 | --- | --- | --- | --- |
-| Free | $0 | Anyone reporting one incident | Full triage, live portal discovery, file on 2 channels, case file PDF |
-| Pro | $4.99 / month | Someone handling a case on their own | Unlimited channels, agent files every form, evidence vault, follow-up monitors, pre-emptive protection arming |
-| Team | $49 / seat / month | NGOs, victim-support orgs, campus safety | Multi-case workspace, shared evidence vault, SLA tracking, escalation templates |
-| **ReclaimYourNet API** | **$499 / month + usage** | **Trust & Safety, fraud and compliance teams at banks and platforms** | **Incident in, regulator-ready case file out. Live channel graph per jurisdiction, SLA clocks and breach alerts, audit-grade evidence chain, webhooks for case and monitor events** |
+| Free | Rs 0 | Anyone reporting one incident | Full triage, live portal discovery, file on 2 channels, case file PDF |
+| Pro | Rs 499 / month | Someone handling a case on their own | Unlimited channels, agent files every form, evidence vault, follow-up monitors, pre-emptive protection arming |
+| For organisations | Rs 4,999 / person / month | NGOs, victim-support orgs, campus safety | Multi-case workspace and assignment, shared evidence vault, SLA tracking, escalation templates |
+| **ReclaimYourNet API** | **Rs 49,999 / month + usage** | **Trust & Safety, fraud and compliance teams at banks and platforms** | **Incident in, regulator-ready case file out. Live channel graph per jurisdiction, SLA clocks and breach alerts, audit-grade evidence chain, webhooks for case and monitor events** |
 
 **Unit economics (measured, not guessed):**
 
 | Line | Cost |
 | --- | --- |
-| TinyFish Search | $0 - free within the daily allowance (12,000/day) |
-| TinyFish Fetch | $0 per URL - free within the daily allowance |
-| TinyFish Agent | $0.016 per step |
-| TinyFish Monitor | $0.005 per run (~$0.15/month for a daily check) |
-| **A full case (2 platform + 2 authority channels, read + fill + submit)** | **~$0.30 - $0.60 in agent credits** |
+| TinyFish Search | Rs 0 - free within the daily allowance (12,000/day) |
+| TinyFish Fetch | Rs 0 per URL - free within the daily allowance |
+| TinyFish Agent | Rs 1.35 per step |
+| TinyFish Monitor | Rs 0.42 per run (~Rs 12 a month for a daily check) |
+| **A full case (2 platform + 2 authority channels, read + fill + submit)** | **Rs 25-50 in agent credits** |
 
-So a Pro subscription at $4.99 carries a ~90% gross margin, and the API tier at
-$499 plus usage is priced with the same cost structure plus the compliance value
-of a regulator-ready audit trail.
+So a Pro subscription at Rs 499 carries a ~90% gross margin, and the API tier at
+Rs 49,999 plus usage is priced with the same cost structure plus the compliance
+value of a regulator-ready audit trail.
 
 **Why someone pays for the API, not just the app:** a bank's fraud desk is
 measured on complaint-handling SLA and on losses recovered, and a platform's
@@ -331,6 +334,10 @@ compliance-driven spend - not a discretionary "nice to have" tool.
 8. **A public channel graph.** Every ReclaimYourNet user benefits from every other
    user's live discovery, so the resolution of "where do I report this" gets
    better with every case.
+9. **A wider city map.** Right now we know ~120 Indian cities and districts. The
+   same mechanism extends to every state cyber cell, every district police
+   website and every State Commission - and to other countries, where the
+   equivalent body has a different name and a different form.
 
 ---
 
@@ -389,3 +396,34 @@ docs/                    this deck, the plan, the dev.to post
   authority to act. It does not decide what is true.
 - **No dark patterns, no data resale.** Evidence is a private artefact by
   default; sharing is an explicit action.
+
+---
+
+## Appendix D - The workflow, step by step
+
+**For the person using it (they should never be confused):**
+
+| # | What they see | What they do | What is happening underneath |
+| --- | --- | --- | --- |
+| 1 | **"What happened?"** - one box, a Dictate button, an "Add my details" link, three example chips | Type or dictate one sentence | The text is read by a local model. It labels the incident type, extracts the platform, amount, dates, links and phone numbers, and masks anything personal. Nothing is sent to any platform yet. |
+| 2 | **"Here is where this needs to be reported."** + a yellow or red urgency banner | Read it | The urgency banner is not a score - it is a sentence: *"Money was moved. A freeze is only realistically possible if reported within 24 hours."* |
+| 3 | **"How this works"** (collapsed, one click) | Optionally open it | Four plain-English steps, so a first-time visitor always knows where they are. |
+| 4 | **"Your details"** | Press Edit, add name / email / mobile / city, press Save | Every form below is rebuilt with the new values, and anything typed by hand is kept. This is also what turns a city into the right local police station and State Commission. |
+| 5 | **"N things we still need from you"** | Type into the yellow boxes | The agent will not guess a required field on a bank or a government form. Most of these disappear the moment step 4 is filled, because they are just your own details. |
+| 6 | **The coverage map**, grouped and numbered: 01 remove it from the platform, 02 create a legal record, 03 stop the money, 04 take it down before it spreads, 05 shrink the blast radius | Open one, press "Read the form" | A TinyFish agent opens the real page, finds the actual form, and returns the fields it has *today* - labels, required flags, dropdown options, what evidence it wants. |
+| 7 | The same card, expanded: your details, what they will ask for, the timing, and the buttons | Check the values, press "Fill & submit" | The agent types the approved values, stops before Submit, and submits only on that explicit second approval. You get a reference number back. |
+| 8 | **"What the agent did"** - the live browser, the timeline, the log | Watch | The agent's own browser is embedded, streamed live over SSE. |
+| 9 | **"Your proof, and what we keep watching"** | Download the case file, press "Start watching" | A SHA-256 chain over every page read and every reference number, exported as a PDF a bank or a police station will accept. Then a TinyFish Monitor re-checks the reported page every six hours. |
+| 10 | **"What it costs"** | Read | Free for the person. The money comes from the banks and platforms that receive the reports. |
+
+**For the judge (what is actually being demonstrated):**
+
+- The triage is a real model with a published 5-fold cross-validation.
+- Every URL in the coverage map was found live, in that run, by the TinyFish
+  Search API - and the city-specific ones could not have been hard-coded.
+- The form fields, including the dropdown options, were read live by the
+  TinyFish Web Agent off the real page.
+- The reference number in the evidence vault came from an actual submission.
+- The monitor in the follow-up panel is a real TinyFish Monitor, running.
+
+**Nothing in the product submits anything a human has not approved.**

@@ -28,6 +28,7 @@ export function Intake({
   const [profile, setProfile] = useState<Profile>({});
   const [country, setCountry] = useState('IN');
   const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const recognitionRef = useRef<any>(null);
 
@@ -35,14 +36,35 @@ export function Intake({
     const w = window as any;
     const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!SR) return;
-    const recognition = new SR();
+    let recognition: any;
+    try {
+      recognition = new SR();
+    } catch {
+      return;
+    }
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-IN';
     recognition.onresult = (event: any) => {
       let transcript = '';
-      for (let i = event.resultIndex; i < event.results.length; i += 1) transcript += event.results[i][0].transcript;
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        transcript += event.results[i][0].transcript;
+      }
       setText((prev) => `${prev}${prev ? ' ' : ''}${transcript}`);
+      setVoiceError(null);
+    };
+    recognition.onerror = (event: any) => {
+      setListening(false);
+      const code = event?.error;
+      if (code === 'not-allowed' || code === 'service-not-allowed') {
+        setVoiceError('Your browser blocked the microphone. Allow it in the address bar, or just type instead.');
+      } else if (code === 'no-speech') {
+        setVoiceError('We did not catch anything. Try again, or just type it.');
+      } else if (code === 'network') {
+        setVoiceError('Dictation needs a network connection. Typing works offline.');
+      } else {
+        setVoiceError('Dictation did not start. Typing works just as well.');
+      }
     };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
@@ -114,18 +136,27 @@ export function Intake({
                   type="button"
                   onClick={() => {
                     const r = recognitionRef.current;
-                    if (!r) return;
+                    if (!r) {
+                      setVoiceError('Dictation is not available in this browser. Typing works just as well.');
+                      return;
+                    }
+                    setVoiceError(null);
                     if (listening) {
                       r.stop();
                       setListening(false);
                     } else {
-                      r.start();
-                      setListening(true);
+                      try {
+                        r.start();
+                        setListening(true);
+                      } catch {
+                        setListening(false);
+                        setVoiceError('Dictation did not start. Typing works just as well.');
+                      }
                     }
                   }}
-                  className="btn-outline"
+                  className={listening ? 'btn-primary' : 'btn-outline'}
                 >
-                  {listening ? 'Stop dictation' : 'Dictate'}
+                  {listening ? 'Listening... stop' : 'Dictate'}
                 </button>
               )}
 
@@ -133,6 +164,12 @@ export function Intake({
                 {showDetails ? 'Hide my details' : 'Add my details'}
               </button>
             </div>
+
+            {voiceError && (
+              <p className="mt-3 rounded-2xl border border-butter-300 bg-butter-50 px-4 py-2.5 text-[13px] text-[#7A5C0B]">
+                {voiceError}
+              </p>
+            )}
 
             {showDetails && (
               <div className="mt-5 grid gap-3 border-t border-ink/10 pt-5 sm:grid-cols-2">
