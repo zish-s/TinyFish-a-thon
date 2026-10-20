@@ -25,8 +25,8 @@ const STEPS = [
 ];
 
 /** A short guide so a first-time visitor always knows where they are. */
-export function HowItWorks() {
-  const [open, setOpen] = useState(false);
+export function HowItWorks({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="rounded-3xl border border-lilac-300/70 bg-lilac-50/60 p-5 sm:p-6">
@@ -55,7 +55,7 @@ export function HowItWorks() {
           </ol>
           <p className="mt-5 flex items-center gap-2 text-[12.5px] text-muted">
             <ArrowCurve className="h-5 w-8 shrink-0 text-coral-300" />
-            Everything below is step 3 and 4. Nothing gets submitted without you.
+            Nothing is submitted without your approval. Not once, not anywhere.
           </p>
         </>
       )}

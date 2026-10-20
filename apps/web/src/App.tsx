@@ -6,7 +6,6 @@ import { CoverageMap } from './components/CoverageMap';
 import { AgentTheatre } from './components/AgentTheatre';
 import { EvidenceVault } from './components/EvidenceVault';
 import { Pricing } from './components/Pricing';
-import { HowItWorks } from './components/HowItWorks';
 import { YourDetails } from './components/YourDetails';
 import { MissingFields } from './components/MissingFields';
 import { Dot, SectionTitle, Tag } from './components/ui';
@@ -216,8 +215,6 @@ export default function App() {
             </div>
 
             <div className="space-y-5">
-              <HowItWorks />
-
               <YourDetails
                 profile={caseFile.profile ?? {}}
                 onSave={async (profile) => {

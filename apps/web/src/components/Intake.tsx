@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Profile } from '../lib/api';
 import { ArrowCurve, Sparkles, Squiggle, Star, Underline } from './Doodles';
+import { HowItWorks } from './HowItWorks';
 
 const EXAMPLES = [
   {
@@ -226,6 +227,10 @@ export function Intake({
 
         <ArrowCurve className="pointer-events-none absolute right-10 top-16 hidden h-9 w-20 animate-drift text-lilac-300 md:block" />
         <Squiggle className="pointer-events-none absolute bottom-16 left-8 hidden h-3.5 w-28 text-mint-300 lg:block" />
+      </div>
+
+      <div className="mt-6">
+        <HowItWorks defaultOpen />
       </div>
     </div>
   );
