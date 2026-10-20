@@ -117,16 +117,36 @@ export function CoverageMap({
                         className="min-w-0 flex-1 text-left"
                       >
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[15px] font-bold text-ink">{channel.name}</span>
+                          {channel.url ? (
+                            <a
+                              href={channel.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[15px] font-bold text-ink underline decoration-coral-300 decoration-2 underline-offset-4 transition hover:decoration-coral-500"
+                            >
+                              {channel.name}
+                            </a>
+                          ) : (
+                            <span className="text-[15px] font-bold text-ink">{channel.name}</span>
+                          )}
                           <Tag tone={status.tone}>{status.label}</Tag>
                           {channel.priority === 'later' && <Tag tone="lilac">later</Tag>}
                           {channel.reference && <Tag tone="mint">{channel.reference}</Tag>}
                           {missing.length > 0 && <Tag tone="butter">{missing.length} to fill</Tag>}
                         </div>
                         <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{channel.why}</p>
-                        <p className="mt-1.5 font-mono text-[11.5px] text-muted-faint">
-                          {host || 'looking for the official page...'}
-                        </p>
+                        {host ? (
+                          <a
+                            href={channel.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1.5 inline-block font-mono text-[11.5px] text-coral-600 underline underline-offset-2 hover:text-coral-700"
+                          >
+                            {host} ↗
+                          </a>
+                        ) : (
+                          <p className="mt-1.5 font-mono text-[11.5px] text-muted-faint">looking for the official page...</p>
+                        )}
                       </button>
 
                       <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -169,8 +189,16 @@ export function CoverageMap({
                           <div className="mb-4 flex items-start gap-3 rounded-2xl border border-lilac-100 bg-lilac-50/70 px-4 py-3">
                             <ArrowCurve className="mt-0.5 h-5 w-8 shrink-0 text-lilac-500" />
                             <p className="text-[13px] leading-relaxed text-muted">
-                              This one runs on <span className="font-semibold text-ink">{host}</span>, so we cannot file it
-                              from here. Open it in a new tab
+                              This one runs on{' '}
+                              <a
+                                href={channel.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-semibold text-coral-600 underline underline-offset-2 hover:text-coral-700"
+                              >
+                                {host} ↗
+                              </a>
+                              , so we cannot file it from here. Open it in a new tab
                               {needsUpload ? ', upload the file, and paste your details' : ' and paste your details'} - we
                               have copied them for you.
                             </p>
