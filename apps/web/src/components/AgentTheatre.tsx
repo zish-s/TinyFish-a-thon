@@ -42,6 +42,17 @@ export function AgentTheatre({
         />
         {streamingUrl ? (
           <div className="overflow-hidden rounded-2xl border border-hair-8 bg-ink">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2">
+              <span className="font-mono text-[11px] text-slate-400">the agent's browser, live</span>
+              <a
+                href={streamingUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-semibold text-brand-300 underline underline-offset-2"
+              >
+                open it full size ↗
+              </a>
+            </div>
             <iframe title="Agent browser" src={streamingUrl} className="aspect-video w-full" />
           </div>
         ) : (

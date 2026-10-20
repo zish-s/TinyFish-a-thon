@@ -148,6 +148,14 @@ export interface Channel {
   overrides?: Record<string, string>;
   /** Free-text narrative built from the incident. */
   narrative?: string;
+  /** What the agent managed to fill, so the user can see it without watching. */
+  fillResult?: {
+    filled: number;
+    total: number;
+    /** Labels of the fields the form requires and nobody could supply. */
+    missing: string[];
+    note?: string;
+  };
   /** Reference / ticket number returned after filing. */
   reference?: string;
   error?: string;

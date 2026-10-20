@@ -504,7 +504,13 @@ export async function fileChannel(
   setStatus(caseId, 'filing', `Filing with ${channel.name}`);
 
   if (missing.length) {
-    log(caseId, 'warn', `${channel.name}: ${missing.length} required field(s) still empty - the agent will not guess them`);
+    log(
+      caseId,
+      'warn',
+      `${channel.name}: ${missing.length} field${missing.length === 1 ? '' : 's'} the form marks as required are still empty (${missing
+        .map((m) => m.label)
+        .join(', ')}) - the agent will not guess them`,
+    );
   }
 
   const fieldTable = channel.requiredFields
@@ -551,13 +557,35 @@ export async function fileChannel(
       maxDurationSeconds: 260,
     });
 
-    const fillResult = final.result as { filled?: Array<{ label: string; status: string }>; missing?: string[] };
-    const filledCount = fillResult?.filled?.filter((f) => f.status === 'filled').length ?? 0;
-    log(caseId, 'success', `${channel.name}: ${filledCount} field(s) filled by the agent`);
+    const fillResult = final.result as {
+      filled?: Array<{ label: string; value: string; status: string }>;
+      missing?: string[];
+      notes?: string;
+    };
+    const missingOnForm = fillResult?.missing ?? [];
+    // The agent does not always populate the `filled` array, so the count is
+    // derived from our own field list: everything except what it said it could
+    // not fill. Its own summary is kept and shown to the user.
+    const total = channel.requiredFields.length;
+    const filled = Math.max(0, total - missingOnForm.length);
 
-    if (fillResult?.missing?.length) {
-      const stillMissing = new Set([...missing.map((m) => m.label), ...fillResult.missing]);
-      channel.error = `The agent filled everything it could. Only the field${stillMissing.size === 1 ? '' : 's'} the form marks as required still need${stillMissing.size === 1 ? 's' : ''} you: ${[...stillMissing].join(', ')}`;
+    channel.fillResult = {
+      filled,
+      total,
+      missing: missingOnForm,
+      note: fillResult?.notes,
+    };
+
+    log(
+      caseId,
+      'success',
+      `${channel.name}: the agent filled ${filled} of ${total} field${total === 1 ? '' : 's'}`,
+    );
+
+    if (missingOnForm.length) {
+      channel.error = `The agent filled everything it could. ${missingOnForm.length} field${
+        missingOnForm.length === 1 ? '' : 's'
+      } that the form marks as required still need${missingOnForm.length === 1 ? 's' : ''} you: ${missingOnForm.join(', ')}`;
       channel.status = 'ready';
     } else {
       channel.error = undefined;

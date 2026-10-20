@@ -95,8 +95,18 @@ Expand the **Instagram** channel. Press **"Read the form"**.
 When it returns, the card updates with the live fields and the dropdown options.
 
 > "It even read the dropdown - Impersonation, Hacked account, Harassment, Scam.
-> And it pre-filled everything. The blank ones are yellow because the agent
-> will not guess a required field on a bank form."
+> And it pre-filled everything."
+
+### 1:50 - Show that it is filled (10 s)
+
+Point at the green badge on the channel card:
+
+> "And you do not have to take my word for it - the card says **filled 3 of 3**, and
+> the agent's own note is right there saying exactly what it typed into each
+> field. The browser is a bonus; the answer is on the card."
+
+This is the moment that answers "how do I know it worked" without making the
+judge squint at a live browser.
 
 ### 1:55 - File it (25 s)
 

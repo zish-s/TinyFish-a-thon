@@ -138,6 +138,31 @@ export function CoverageMap({
                             </Tag>
                           )}
                         </div>
+                          {channel.fillResult && (
+                            <div
+                              className={`mt-2 rounded-xl border px-3 py-2 text-[12.5px] ${
+                                channel.fillResult.missing.length
+                                  ? 'border-butter-300 bg-butter-50/80 text-[#7A5C0B]'
+                                  : 'border-mint-300 bg-mint-50/80 text-[#1F7A5C]'
+                              }`}
+                            >
+                              <span className="font-semibold">
+                                {channel.fillResult.missing.length
+                                  ? `Filled ${channel.fillResult.filled} of ${channel.fillResult.total} - ${
+                                      channel.fillResult.missing.length
+                                    } still need${channel.fillResult.missing.length === 1 ? 's' : ''} you`
+                                  : `Filled all ${channel.fillResult.total} fields`}
+                              </span>
+                              {channel.fillResult.missing.length > 0 && (
+                                <span className="text-muted"> ({channel.fillResult.missing.join(', ')})</span>
+                              )}
+                              {channel.fillResult.note && (
+                                <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-muted">
+                                  {channel.fillResult.note}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{channel.why}</p>
                         {host ? (
                           <a
