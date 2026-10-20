@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-slate-200 antialiased;
+  background-image:
+    radial-gradient(900px 500px at 12% -8%, rgba(20, 184, 166, 0.12), transparent 60%),
+    radial-gradient(800px 500px at 92% 0%, rgba(56, 189, 248, 0.08), transparent 55%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-ink-700/70 bg-ink-900/70 backdrop-blur-sm;
+  }
+  .panel-inset {
+    @apply rounded-xl border border-ink-700/60 bg-ink-950/60;
+  }
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition
+      disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-ink-950 hover:bg-brand-400;
+  }
+  .btn-ghost {
+    @apply btn border border-ink-600 bg-ink-850/60 text-slate-200 hover:border-ink-600 hover:bg-ink-800;
+  }
+  .btn-danger {
+    @apply btn border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20;
+  }
+  .input {
+    @apply w-full rounded-lg border border-ink-600 bg-ink-950/70 px-3 py-2.5 text-sm text-slate-100
+      placeholder:text-slate-600 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium;
+  }
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #1d2e45 transparent;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: #1d2e45;
+    border-radius: 8px;
+  }
+}
+
+.grid-lines {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 44px 44px;
+}

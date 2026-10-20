@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Remove non-consensual intimate images - Redress sandbox</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; background:#fbf7ff; color:#241b35; }
+  header { background:#4c1d95; color:#fff; padding:24px; }
+  header h1 { margin:0; font-size:21px; }
+  header p { margin:6px 0 0; opacity:.9; font-size:13px; }
+  main { max-width:640px; margin:26px auto 60px; background:#fff; border:1px solid #e9d5ff; border-radius:12px; padding:26px; }
+  .note { background:#f5f3ff; border:1px solid #ddd6fe; border-radius:8px; padding:13px 15px; font-size:13px; color:#4c1d95; margin-bottom:18px; }
+  label { display:block; font-size:13px; font-weight:600; margin:15px 0 6px; }
+  label span.req { color:#b91c1c; }
+  input[type=text], textarea, input[type=file], select { width:100%; padding:10px 12px; border:1px solid #d6d3e6; border-radius:8px; font-size:14px; font-family:inherit; }
+  textarea { min-height:110px; resize:vertical; }
+  .hint { font-size:12px; color:#6b7280; margin-top:5px; }
+  button { margin-top:22px; background:#4c1d95; color:#fff; border:0; border-radius:8px; padding:12px 24px; font-size:15px; font-weight:600; cursor:pointer; }
+  .confirmation { display:none; margin-top:20px; padding:18px; border-radius:8px; background:#ecfdf5; border:1px solid #6ee7b7; }
+  .confirmation h2 { margin:0 0 6px; color:#065f46; }
+  .ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight:700; font-size:19px; color:#065f46; }
+  .tag { display:inline-block; background:#fff7ed; color:#b35c00; border:1px solid #fdba74; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Submit a takedown request</h1>
+  <p>Non-consensual intimate images, including AI-morphed and deepfake versions</p>
+</header>
+<main>
+  <p><span class="tag">REDRESS SANDBOX</span> Local clone for the demo. Your file is not uploaded anywhere.</p>
+  <div class="note">Upload the image or video once. We hash it and match it - including morphed versions - against a network of participating platforms, and keep checking for re-uploads for up to a year. You never have to upload it again.</div>
+
+  <form id="takedownForm" method="post" action="/demo-portals/takedown.html" enctype="multipart/form-data">
+    <label for="upload">Upload the image or video <span class="req">*</span></label>
+    <input type="file" id="upload" name="upload" />
+    <div class="hint">The original never leaves this device in hashed form.</div>
+
+    <label for="details">Details of the abuse <span class="req">*</span></label>
+    <textarea id="details" name="details" placeholder="Where you found it, who may have shared it, when you discovered it."></textarea>
+
+    <label for="category">Type of content</label>
+    <select id="category" name="category">
+      <option value="Non-consensual intimate image">Non-consensual intimate image</option>
+      <option value="AI-morphed / deepfake">AI-morphed / deepfake</option>
+      <option value="Threat or blackmail">Threat or blackmail</option>
+      <option value="Minor involved">Minor involved</option>
+    </select>
+
+    <button type="submit" id="submitBtn">Submit takedown request</button>
+  </form>
+
+  <div class="confirmation" id="confirmation">
+    <h2>Takedown request received</h2>
+    <p>We have registered the hash and started searching for every copy, including morphed versions.</p>
+    <p class="ref" id="reference">TDK-2026-000000</p>
+    <p style="font-size:13px;color:#4b5563">Removal usually starts within 24 hours. You will be notified when each copy is taken down, and if it is re-uploaded later.</p>
+  </div>
+</main>
+<script>
+  document.getElementById('takedownForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ref = 'TDK-2026-' + String(Math.floor(100000 + Math.random() * 899999));
+    document.getElementById('reference').textContent = ref;
+    document.getElementById('confirmation').style.display = 'block';
+    document.getElementById('takedownForm').style.display = 'none';
+    document.title = 'Takedown request received - ' + ref;
+  });
+</script>
+</body>
+</html>

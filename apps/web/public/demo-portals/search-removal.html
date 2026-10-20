@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Request removal of a URL - Redress sandbox</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI", Roboto, Arial, sans-serif; background:#f8f9fa; color:#202124; }
+  header { background:#fff; border-bottom:1px solid #dadce0; padding:22px 24px; }
+  header h1 { margin:0; font-size:21px; font-weight:500; }
+  header p { margin:6px 0 0; font-size:13px; color:#5f6368; }
+  main { max-width:640px; margin:26px auto 60px; background:#fff; border:1px solid #dadce0; border-radius:12px; padding:26px; }
+  .info { background:#e8f0fe; border:1px solid #d2e3fc; border-radius:8px; padding:13px 15px; font-size:13px; color:#174ea6; margin-bottom:18px; }
+  label { display:block; font-size:13px; font-weight:500; margin:16px 0 6px; }
+  label span.req { color:#c5221f; }
+  input[type=text], select, textarea { width:100%; padding:10px 12px; border:1px solid #dadce0; border-radius:4px; font-size:14px; font-family:inherit; }
+  textarea { min-height:120px; resize:vertical; }
+  .hint { font-size:12px; color:#5f6368; margin-top:5px; }
+  button { margin-top:22px; background:#1a73e8; color:#fff; border:0; border-radius:4px; padding:11px 26px; font-size:15px; font-weight:500; cursor:pointer; }
+  .confirmation { display:none; margin-top:20px; padding:18px; border-radius:8px; background:#e6f4ea; border:1px solid #a8dab5; }
+  .confirmation h2 { margin:0 0 6px; color:#137333; }
+  .ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight:700; font-size:19px; color:#137333; }
+  .tag { display:inline-block; background:#fff7ed; color:#b35c00; border:1px solid #fdba74; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Request removal of a URL</h1>
+  <p>Remove a page from search results because it contains personal information, explicit content or harmful material.</p>
+</header>
+<main>
+  <p><span class="tag">REDRESS SANDBOX</span> Local clone for the demo. Nothing is transmitted.</p>
+  <div class="info">De-indexing cuts off discovery: most victims are found through a search result, not by visiting the host directly. Removal usually completes within a few days.</div>
+
+  <form id="removalForm" method="post" action="/demo-portals/search-removal.html">
+    <label for="url">URL to remove <span class="req">*</span></label>
+    <input type="text" id="url" name="url" placeholder="https://example.com/page" />
+
+    <label for="reason">Reason <span class="req">*</span></label>
+    <select id="reason" name="reason">
+      <option value="">Select a reason</option>
+      <option value="Personal information / doxxing">Personal information / doxxing</option>
+      <option value="Sexually explicit content">Sexually explicit content</option>
+      <option value="Harassment">Harassment</option>
+      <option value="Deceptive or harmful content">Deceptive or harmful content</option>
+      <option value="Copyright">Copyright</option>
+    </select>
+
+    <label for="details">Details <span class="req">*</span></label>
+    <textarea id="details" name="details" placeholder="Explain what is on the page and why it should not appear in search results."></textarea>
+
+    <button type="submit" id="submitBtn">Submit removal request</button>
+  </form>
+
+  <div class="confirmation" id="confirmation">
+    <h2>Removal request submitted</h2>
+    <p>We have queued the URL for de-indexing. Your reference:</p>
+    <p class="ref" id="reference">URL-2026-000000</p>
+  </div>
+</main>
+<script>
+  document.getElementById('removalForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ref = 'URL-2026-' + String(Math.floor(100000 + Math.random() * 899999));
+    document.getElementById('reference').textContent = ref;
+    document.getElementById('confirmation').style.display = 'block';
+    document.getElementById('removalForm').style.display = 'none';
+    document.title = 'Removal request submitted - ' + ref;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Report Impersonation - Instagram (Redress sandbox)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#fafafa; color:#262626; }
+  header { background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); padding:28px 24px; color:#fff; }
+  header h1 { margin:0; font-size:22px; font-weight:600; }
+  header p { margin:6px 0 0; opacity:.9; font-size:13px; }
+  main { max-width: 620px; margin: 28px auto 60px; background:#fff; border:1px solid #dbdbdb; border-radius:12px; padding:24px; }
+  label { display:block; font-size:13px; font-weight:600; margin:16px 0 6px; }
+  label span.req { color:#ed4956; }
+  input[type=text], input[type=email], input[type=tel], input[type=date], select, textarea {
+    width:100%; padding:10px 12px; border:1px solid #dbdbdb; border-radius:8px; font-size:14px; background:#fff; font-family:inherit;
+  }
+  textarea { min-height:120px; resize:vertical; }
+  .hint { font-size:12px; color:#8e8e8e; margin-top:5px; }
+  button { margin-top:22px; background:#0095f6; color:#fff; border:0; border-radius:8px; padding:11px 22px; font-size:15px; font-weight:600; cursor:pointer; }
+  button:hover { background:#1877f2; }
+  .confirmation { display:none; margin-top:22px; padding:16px; border-radius:10px; background:#e8f5e9; border:1px solid #a5d6a7; }
+  .confirmation h2 { margin:0 0 8px; font-size:16px; color:#1b5e20; }
+  .ref { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight:700; font-size:18px; letter-spacing:.5px; }
+  .tag { display:inline-block; background:#fff3e0; color:#b35c00; border:1px solid #ffcc80; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700; letter-spacing:.4px; }
+  .steps { display:flex; gap:8px; margin:0 0 20px; padding:0; list-style:none; font-size:12px; color:#8e8e8e; }
+  .steps li.active { color:#0095f6; font-weight:700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Instagram &mdash; Report Impersonation</h1>
+  <p>Help us keep Instagram safe. Reports are reviewed by our Integrity team.</p>
+</header>
+<main>
+  <p><span class="tag">REDRESS SANDBOX</span> This is a local clone used for the demo. No data leaves this machine.</p>
+  <ul class="steps"><li class="active">1. Account</li><li>2. Details</li><li>3. Submit</li></ul>
+
+  <form id="reportForm" method="post" action="/demo-portals/instagram.html">
+    <label for="username">Profile link or username <span class="req">*</span></label>
+    <input type="text" id="username" name="username" placeholder="https://instagram.com/…" />
+    <div class="hint">The exact profile that is impersonating you.</div>
+
+    <label for="category">Report category <span class="req">*</span></label>
+    <select id="category" name="category">
+      <option value="">Select a category</option>
+      <option value="Impersonation">Impersonation</option>
+      <option value="Hacked account">Hacked account</option>
+      <option value="Harassment">Harassment</option>
+      <option value="Scam / Fraud">Scam / Fraud</option>
+      <option value="Sensitive media">Sensitive media</option>
+    </select>
+
+    <label for="details">What happened? <span class="req">*</span></label>
+    <textarea id="details" name="details" placeholder="Describe the impersonation, what was shared, and who was contacted."></textarea>
+    <div class="hint">Include dates, amounts and links. Reports with evidence are resolved faster.</div>
+
+    <button type="submit" id="submitBtn">Submit Report</button>
+  </form>
+
+  <div class="confirmation" id="confirmation">
+    <h2>Thanks &mdash; your report was submitted</h2>
+    <p>Your report has been sent to our Integrity team. Keep this reference for your records.</p>
+    <p class="ref" id="reference">IG-2026-000000</p>
+    <p style="font-size:13px;color:#555">We will email you at the address on file when the review is complete. Most reviews finish within 24-72 hours.</p>
+  </div>
+</main>
+<script>
+  document.getElementById('reportForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ref = 'IG-2026-' + String(Math.floor(100000 + Math.random() * 899999));
+    document.getElementById('reference').textContent = ref;
+    document.getElementById('confirmation').style.display = 'block';
+    document.getElementById('reportForm').style.display = 'none';
+    document.title = 'Report submitted - ' + ref;
+  });
+</script>
+</body>
+</html>
