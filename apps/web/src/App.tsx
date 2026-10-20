@@ -18,7 +18,7 @@ export default function App() {
   const [monitorsArmed, setMonitorsArmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [busyChannel, setBusyChannel] = useState<string | null>(null);
-  const [sandbox, setSandbox] = useState(false);
+  const [sandbox, setSandbox] = useState(true);
   const [health, setHealth] = useState<any>(null);
 
   useEffect(() => {
@@ -119,6 +119,13 @@ export default function App() {
 
   return (
     <div className="flex min-h-full flex-col">
+      {health && !health.tinyfish?.configured && (
+        <div className="border-b border-rose-300/70 bg-rose-50 px-5 py-3 text-center text-[13px] font-medium text-[#A63A56]">
+          TinyFish is not configured on this deployment. Add{' '}
+          <span className="font-mono">TINYFISH_API_KEY</span> as an environment variable and redeploy - the agent
+          cannot run without it.
+        </div>
+      )}
       <header className="sticky top-0 z-20 border-b border-hair-8 bg-canvas/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3.5">
           <a href="#" onClick={reset} className="flex items-center gap-2.5">

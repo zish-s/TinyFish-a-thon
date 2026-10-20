@@ -44,6 +44,13 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
     } catch {
       /* keep raw text */
     }
+    if (res.status === 401 || code === 'MISSING_API_KEY' || code === 'INVALID_API_KEY') {
+      throw new TinyFishError(
+        'TinyFish is not configured on this deployment. Add TINYFISH_API_KEY as an environment variable and redeploy.',
+        res.status,
+        code,
+      );
+    }
     throw new TinyFishError(`TinyFish ${res.status}: ${msg}`, res.status, code);
   }
   if (!text) return {} as T;
@@ -156,7 +163,14 @@ export async function runAgent(
   });
 
   if (!res.ok || !res.body) {
-    const text = await res.text();
+    const text = await res.text().catch(() => '');
+    if (res.status === 401) {
+      throw new TinyFishError(
+        'TinyFish is not configured on this deployment. Add TINYFISH_API_KEY as an environment variable and redeploy.',
+        401,
+        'MISSING_API_KEY',
+      );
+    }
     throw new TinyFishError(`TinyFish agent ${res.status}: ${text.slice(0, 300)}`, res.status);
   }
 

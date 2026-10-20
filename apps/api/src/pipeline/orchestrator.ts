@@ -340,8 +340,7 @@ export async function analyseChannel(
     saveAndPublish(caseId);
     log(caseId, 'warn', `${channel.name}: no live page found - marked as a manual step`);
     return channel;
-  }
-  const targetUrl =
+  }  const targetUrl =
     caseFile.sandbox ? demoPortalUrl(channel.id, publicBaseUrl) ?? channel.url : channel.url;
   const stepId = randomUUID();
 
@@ -372,6 +371,7 @@ export async function analyseChannel(
     `   - options: for a select or radio field, the visible option values. For every other kind, leave it out.`,
     `4. Record the report categories the form offers and any evidence it asks the user to attach.`,
     `5. Do NOT type into the form. Do NOT submit anything.`,
+    `6. Work quickly. If the page asks you to log in or sign up, stop immediately and say so - do not keep trying.`,
     ``,
     `Return the result as JSON matching the requested schema.`,
   ].join('\n');
@@ -443,7 +443,16 @@ export async function analyseChannel(
     } else {
       step.status = 'done';
       channel.status = 'manual';
-      log(caseId, 'warn', `${channel.name}: no fillable form found on the live page - marked as a manual step`);
+      channel.error = channel.url.includes('help.instagram.com') ||
+        channel.url.includes('facebook.com') ||
+        channel.url.includes('help.x.com')
+        ? `${channel.name} asks you to log in before you can report, so the agent cannot fill it. Open the link and file it yourself, or turn on Practice mode to try it on a copy.`
+        : `${channel.name} has no form the agent could read on that page. Open the link and file it yourself, or turn on Practice mode to try it on a copy.`;
+      log(
+        caseId,
+        'warn',
+        `${channel.name}: ${channel.error}`,
+      );
     }
 
     step.result = spec;
