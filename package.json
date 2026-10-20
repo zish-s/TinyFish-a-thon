@@ -1,0 +1,30 @@
+{
+  "name": "redress",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Redress - report once, file everywhere, prove it happened. A TinyFish web agent for citizen grievance routing.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:core": "npm run build --workspace @redress/core",
+    "dev": "npm run build:core && concurrently -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev --workspace @redress/api",
+    "dev:web": "npm run dev --workspace @redress/web",
+    "build": "npm run build:core && npm run build --workspace @redress/api && npm run build --workspace @redress/web",
+    "build:vercel": "npm run build:core && npm run build --workspace @redress/web",
+    "start": "npm run start --workspace @redress/api",
+    "test": "npm run build:core && npm run test --workspace @redress/core",
+    "eval": "npm run eval --workspace @redress/core",
+    "tunnel": "cloudflared tunnel --url http://localhost:4000"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
