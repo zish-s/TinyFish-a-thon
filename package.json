@@ -14,7 +14,7 @@
     "dev:api": "npm run dev --workspace @reclaim/api",
     "dev:web": "npm run dev --workspace @reclaim/web",
     "build": "npm run build:core && npm run build --workspace @reclaim/api && npm run build --workspace @reclaim/web",
-    "build:vercel": "npm run build:core && npm run build --workspace @reclaim/web",
+    "build:vercel": "npm run build:core && npm run build --workspace @reclaim/api && npm run build --workspace @reclaim/web",
     "start": "npm run start --workspace @reclaim/api",
     "test": "npm run build:core && npm run test --workspace @reclaim/core",
     "eval": "npm run eval --workspace @reclaim/core",

@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { buildApp } from '../apps/api/src/app';
+// The compiled output, not the TypeScript source: Vercel bundles the function
+// and needs a real .js module to resolve.
+import { buildApp } from '../apps/api/dist/app.js';
 
 /**
  * Vercel serverless entry point.

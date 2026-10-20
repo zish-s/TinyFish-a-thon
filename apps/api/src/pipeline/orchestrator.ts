@@ -163,8 +163,26 @@ function saveAndPublish(caseId: string) {
   return caseFile;
 }
 
-function channelOf(caseId: string, channelId: string): Channel {
-  const caseFile = getCase(caseId)!;
+/**
+ * The case a request is working on.
+ *
+ * On a serverless platform each request may land on a different instance with
+ * no memory of the last one, so the client sends the case with the request
+ * and the server works on that copy. Locally it falls back to the store.
+ */
+function resolveCase(caseId: string, provided?: CaseFile): CaseFile {
+  if (provided) {
+    const existing = getCase(caseId);
+    if (existing) return existing;
+    return provided;
+  }
+  const stored = getCase(caseId);
+  if (!stored) throw new Error('case not found');
+  return stored;
+}
+
+function channelOf(caseId: string, channelId: string, provided?: CaseFile): Channel {
+  const caseFile = resolveCase(caseId, provided);
   const channel = caseFile.plan.channels.find((c) => c.id === channelId);
   if (!channel) throw new Error(`Unknown channel ${channelId}`);
   return channel;
@@ -234,8 +252,13 @@ function scoreSearchResult(result: tf.SearchResult, knownDomains: string[]): num
  * Nothing is hard-coded: if a ministry moves its page, the next run finds the
  * new one. Search is free within TinyFish's daily allowance.
  */
-export async function discoverChannels(caseId: string, sandbox: boolean, publicBaseUrl?: string): Promise<CaseFile> {
-  const caseFile = getCase(caseId)!;
+export async function discoverChannels(
+  caseId: string,
+  sandbox: boolean,
+  publicBaseUrl?: string,
+  provided?: CaseFile,
+): Promise<CaseFile> {
+  const caseFile = resolveCase(caseId, provided);
   setStatus(caseId, 'planning', 'Looking up the live official portals and helplines');
   log(caseId, 'info', `Discovery: ${caseFile.plan.channels.length} channels to verify (TinyFish Search)`);
 
@@ -307,9 +330,10 @@ export async function analyseChannel(
   caseId: string,
   channelId: string,
   publicBaseUrl?: string,
+  provided?: CaseFile,
 ): Promise<Channel> {
-  const caseFile = getCase(caseId)!;
-  const channel = channelOf(caseId, channelId);
+  const caseFile = resolveCase(caseId, provided);
+  const channel = channelOf(caseId, channelId, provided);
   if (!channel.url) {
     channel.status = 'manual';
     channel.error = 'We could not find an official page for this one. Open it from the link, or skip it.';
@@ -450,9 +474,10 @@ export async function fileChannel(
   channelId: string,
   options: { submit: boolean; values?: Record<string, string> },
   publicBaseUrl?: string,
+  provided?: CaseFile,
 ): Promise<Channel> {
-  const caseFile = getCase(caseId)!;
-  const channel = channelOf(caseId, channelId);
+  const caseFile = resolveCase(caseId, provided);
+  const channel = channelOf(caseId, channelId, provided);
   const values = { ...channel.draft, ...(options.values ?? {}) };
   const missing = channel.requiredFields.filter((f) => f.required && !values[f.name]);
   if (!channel.url) {
@@ -634,8 +659,12 @@ export async function fileChannel(
  * re-checks the reported URL, a Topic monitor watches for a clone of the
  * account appearing elsewhere. If the content is still up, we say so.
  */
-export async function armMonitors(caseId: string, sandbox = false): Promise<CaseFile> {
-  const caseFile = getCase(caseId)!;
+export async function armMonitors(
+  caseId: string,
+  sandbox = false,
+  provided?: CaseFile,
+): Promise<CaseFile> {
+  const caseFile = resolveCase(caseId, provided);
   const filed = caseFile.plan.channels.filter((c) => c.status === 'submitted');
   if (!filed.length) {
     log(caseId, 'warn', 'No submitted channel to monitor yet');
@@ -732,8 +761,8 @@ export function monitorsFor(caseId: string) {
  * is kept, because re-typing a description is exactly the work we are trying
  * to save them.
  */
-export function updateDetails(caseId: string, profile: ReporterProfile): CaseFile {
-  const caseFile = getCase(caseId)!;
+export function updateDetails(caseId: string, profile: ReporterProfile, provided?: CaseFile): CaseFile {
+  const caseFile = resolveCase(caseId, provided);
   caseFile.profile = { ...caseFile.profile, ...profile };
   const narrative = buildNarrative(caseFile.incident, caseFile.profile);
   for (const channel of caseFile.plan.channels) {
@@ -752,8 +781,9 @@ export function updateChannelFields(
   caseId: string,
   channelId: string,
   values: Record<string, string>,
+  provided?: CaseFile,
 ): Channel {
-  const caseFile = getCase(caseId)!;
+  const caseFile = resolveCase(caseId, provided);
   const channel = caseFile.plan.channels.find((c) => c.id === channelId);
   if (!channel) throw new Error(`Unknown channel ${channelId}`);
   channel.draft = { ...channel.draft, ...values };

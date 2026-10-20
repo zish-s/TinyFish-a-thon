@@ -1,6 +1,5 @@
 node_modules
 packages/core/dist
-apps/api/dist
 apps/web/dist
 .data
 .env

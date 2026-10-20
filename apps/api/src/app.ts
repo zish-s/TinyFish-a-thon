@@ -1,9 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { existsSync } from 'node:fs';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
-import fastifyStatic from '@fastify/static';
 import multipart from '@fastify/multipart';
 import { registerRoutes } from './routes.js';
 
@@ -15,6 +13,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
  * The same app is used by the standalone server (`npm run dev`) and by the
  * Vercel serverless function in `api/`, so there is exactly one definition of
  * the routes and one definition of the behaviour.
+ *
+ * The client is NOT served from here: in development Vite serves it, and in
+ * production Vercel serves the static build. That keeps this bundle small and
+ * avoids a CommonJS/ESM clash inside the function.
  */
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -38,18 +40,6 @@ export async function buildApp(): Promise<FastifyInstance> {
       done(null, {});
     }
   });
-
-  // Serve the built client when it is on disk (local `npm start`). On Vercel
-  // the client is served as static assets by the platform itself.
-  const webDist = path.resolve(here, '..', '..', '..', 'apps', 'web', 'dist');
-  if (existsSync(webDist)) {
-    await app.register(fastifyStatic, {
-      root: webDist,
-      prefix: '/',
-      decorateReply: false,
-      wildcard: false,
-    });
-  }
 
   await registerRoutes(app);
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentStep, CaseFile } from '@reclaim/core';
-import { api, subscribeToCase, type CaseEvent, type LogLine, type Profile } from './lib/api';
+import { api, type CaseEvent, type LogLine, type Profile } from './lib/api';
 import { Intake } from './components/Intake';
 import { CoverageMap } from './components/CoverageMap';
 import { AgentTheatre } from './components/AgentTheatre';
@@ -63,8 +63,7 @@ export default function App() {
     try {
       const created = await api.createCase(text, profile, country);
       setCaseFile(created);
-      subscribeToCase(created.id, handleEvent);
-      await api.discover(created.id, sandbox);
+      await runAction((c) => api.discover(created.id, sandbox, c, handleEvent), created);
     } catch (err) {
       setLogs([
         {
@@ -79,6 +78,14 @@ export default function App() {
     }
   };
 
+  /** Runs one agent action as a single streamed request. */
+  const runAction = async (
+    call: (current: CaseFile) => Promise<void>,
+    current: CaseFile,
+  ) => {
+    await call(current);
+  };
+
   const streamingUrl = useMemo(() => {
     const running = steps.filter((s) => s.status === 'running');
     return running.find((s) => s.streamingUrl)?.streamingUrl ?? steps.find((s) => s.streamingUrl)?.streamingUrl;
@@ -88,15 +95,15 @@ export default function App() {
     if (!caseFile) return;
     setBusyChannel(channelId);
     try {
-      if (action === 'analyse') await api.analyse(caseFile.id, channelId);
-      else await api.file(caseFile.id, channelId, action === 'submit');
+      if (action === 'analyse') await api.analyse(caseFile.id, channelId, caseFile, handleEvent);
+      else await api.file(caseFile.id, channelId, action === 'submit', caseFile, handleEvent);
     } catch (err) {
       setLogs((prev) => [
         ...prev,
         { type: 'log' as const, level: 'error' as const, message: (err as Error).message, ts: new Date().toISOString() },
       ]);
     } finally {
-      setTimeout(() => setBusyChannel(null), 1500);
+      setBusyChannel(null);
     }
   };
 
@@ -236,7 +243,7 @@ export default function App() {
               <YourDetails
                 profile={caseFile.profile ?? {}}
                 onSave={async (profile) => {
-                  const res = await api.updateDetails(caseFile.id, profile);
+                  const res = await api.updateDetails(caseFile.id, profile, caseFile);
                   setCaseFile(res.caseFile);
                 }}
               />
@@ -245,7 +252,7 @@ export default function App() {
                 channels={caseFile.plan.channels}
                 profileFilled={Boolean(caseFile.profile?.name && caseFile.profile?.phone)}
                 onSave={async (channelId, fieldName, value) => {
-                  const res = await api.updateFields(caseFile.id, channelId, { [fieldName]: value });
+                  const res = await api.updateFields(caseFile.id, channelId, { [fieldName]: value }, caseFile);
                   setCaseFile(res.caseFile);
                 }}
               />
@@ -268,7 +275,8 @@ export default function App() {
                 onAnalyse={(id) => runChannel(id, 'analyse')}
                 onFile={(id, submit) => runChannel(id, submit ? 'submit' : 'fill')}
                 onSkip={async (id) => {
-                  await api.skip(caseFile.id, id);
+                  const res = await api.skip(caseFile.id, id, caseFile);
+                  if (res.caseFile) setCaseFile(res.caseFile);
                 }}
               />
             </section>
@@ -302,7 +310,7 @@ export default function App() {
                 caseId={caseFile.id}
                 armed={monitorsArmed}
                 onArm={async () => {
-                  await api.armMonitors(caseFile.id);
+                  await api.armMonitors(caseFile.id, caseFile, handleEvent);
                   setMonitorsArmed(true);
                 }}
               />

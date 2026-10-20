@@ -60,6 +60,31 @@ function send(reply: FastifyReply, event: CaseEvent) {
   reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
 }
 
+/**
+ * Opens a streamed response on the current request.
+ *
+ * Every agent action is one request that stays open for the whole run, so the
+ * events and the result travel on the same connection. That is what makes the
+ * app work on a serverless platform, where a second request would land on a
+ * different instance with no memory of the first.
+ */
+function openStream(reply: FastifyReply) {
+  reply.hijack();
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  return (event: unknown) => {
+    try {
+      reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+    } catch {
+      /* the client went away */
+    }
+  };
+}
+
 export async function registerRoutes(app: FastifyInstance) {
   /* ------------------------------------------------------------- health */
   app.get('/api/health', async () => {
@@ -134,38 +159,80 @@ export async function registerRoutes(app: FastifyInstance) {
   });
 
   /* ----------------------------------------------------------- discover */
-  app.post('/api/cases/:id/discover', async (request) => {
+  app.post('/api/cases/:id/discover', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = z.object({ sandbox: z.boolean().optional() }).parse(request.body ?? {});
-    if (!getCase(id)) throw new Error('case not found');
-    // Fire and forget: progress arrives over the SSE stream.
-    orch
-      .discoverChannels(id, Boolean(body.sandbox), publicBaseUrl(request))
-      .catch((err) => bus.publish(id, { type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() }));
-    return { started: true };
+    const body = z
+      .object({ sandbox: z.boolean().optional(), case: z.any().optional() })
+      .parse(request.body ?? {});
+    const send = openStream(reply);
+    const unsubscribe = bus.subscribe(id, (event) => send(event));
+    try {
+      const updated = await orch.discoverChannels(id, Boolean(body.sandbox), publicBaseUrl(request), body.case);
+      send({ type: 'case', caseFile: updated });
+    } catch (err) {
+      send({ type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() });
+    } finally {
+      unsubscribe();
+      reply.raw.end();
+    }
   });
 
   /* ----------------------------------------------------------- analyse */
-  app.post('/api/cases/:id/channels/:channelId/analyse', async (request) => {
+  app.post('/api/cases/:id/channels/:channelId/analyse', async (request, reply) => {
     const { id, channelId } = request.params as { id: string; channelId: string };
-    if (!getCase(id)) throw new Error('case not found');
-    orch
-      .analyseChannel(id, channelId, publicBaseUrl(request))
-      .catch((err) => bus.publish(id, { type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() }));
-    return { started: true };
+    const body = z.object({ case: z.any().optional() }).parse(request.body ?? {});
+    const send = openStream(reply);
+    const unsubscribe = bus.subscribe(id, (event) => send(event));
+    try {
+      const updated = await orch.analyseChannel(id, channelId, publicBaseUrl(request), body.case);
+      send({ type: 'case', caseFile: updated });
+    } catch (err) {
+      send({ type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() });
+    } finally {
+      unsubscribe();
+      reply.raw.end();
+    }
   });
 
   /* -------------------------------------------------------------- file */
-  app.post('/api/cases/:id/channels/:channelId/file', async (request) => {
+  app.post('/api/cases/:id/channels/:channelId/file', async (request, reply) => {
     const { id, channelId } = request.params as { id: string; channelId: string };
     const body = z
-      .object({ submit: z.boolean().default(false), values: z.record(z.string(), z.string()).optional() })
+      .object({
+        submit: z.boolean().default(false),
+        values: z.record(z.string(), z.string()).optional(),
+        case: z.any().optional(),
+      })
       .parse(request.body ?? {});
-    if (!getCase(id)) throw new Error('case not found');
-    orch
-      .fileChannel(id, channelId, body, publicBaseUrl(request))
-      .catch((err) => bus.publish(id, { type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() }));
-    return { started: true };
+    const send = openStream(reply);
+    const unsubscribe = bus.subscribe(id, (event) => send(event));
+    try {
+      const updated = await orch.fileChannel(id, channelId, body, publicBaseUrl(request), body.case);
+      send({ type: 'case', caseFile: updated });
+    } catch (err) {
+      send({ type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() });
+    } finally {
+      unsubscribe();
+      reply.raw.end();
+    }
+  });
+
+  /* ----------------------------------------------------------- monitors */
+  app.post('/api/cases/:id/monitors', async (request, reply) => {    const { id } = request.params as { id: string };
+    const body = z
+      .object({ sandbox: z.boolean().optional(), case: z.any().optional() })
+      .parse(request.body ?? {});
+    const send = openStream(reply);
+    const unsubscribe = bus.subscribe(id, (event) => send(event));
+    try {
+      const updated = await orch.armMonitors(id, Boolean(body.sandbox), body.case);
+      send({ type: 'case', caseFile: updated });
+    } catch (err) {
+      send({ type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() });
+    } finally {
+      unsubscribe();
+      reply.raw.end();
+    }
   });
 
   app.post('/api/cases/:id/channels/:channelId/skip', async (request) => {    const { id, channelId } = request.params as { id: string; channelId: string };
@@ -177,17 +244,6 @@ export async function registerRoutes(app: FastifyInstance) {
       bus.publish(id, { type: 'channel', channel });
     }
     return { ok: true };
-  });
-
-  /* ----------------------------------------------------------- monitors */
-  app.post('/api/cases/:id/monitors', async (request) => {
-    const { id } = request.params as { id: string };
-    const body = z.object({ sandbox: z.boolean().optional() }).parse(request.body ?? {});
-    if (!getCase(id)) throw new Error('case not found');
-    orch
-      .armMonitors(id, Boolean(body.sandbox))
-      .catch((err) => bus.publish(id, { type: 'log', level: 'error', message: String(err), ts: new Date().toISOString() }));
-    return { started: true };
   });
 
   app.get('/api/cases/:id/monitors', async (request) => {
@@ -291,18 +347,19 @@ export async function registerRoutes(app: FastifyInstance) {
         phone: z.string().optional(),
         address: z.string().optional(),
         city: z.string().optional(),
+        case: z.any().optional(),
       })
       .parse(request.body ?? {});
-    if (!getCase(id)) throw new Error('case not found');
-    return { caseFile: orch.updateDetails(id, body) };
+    const { case: _case, ...profile } = body;
+    return { caseFile: orch.updateDetails(id, profile, body.case) };
   });
 
   /* ---------------------------------------------------------- edit fields */
   app.patch('/api/cases/:id/channels/:channelId/fields', async (request) => {
     const { id, channelId } = request.params as { id: string; channelId: string };
-    const body = z.record(z.string(), z.string()).parse(request.body ?? {});
+    const body = z.object({ values: z.record(z.string(), z.string()), case: z.any().optional() }).parse(request.body ?? {});
     if (!getCase(id)) throw new Error('case not found');
-    const channel = orch.updateChannelFields(id, channelId, body);
+    const channel = orch.updateChannelFields(id, channelId, body.values, body.case);
     return { channel, caseFile: getCase(id) };
   });
 
