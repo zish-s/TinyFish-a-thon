@@ -63,6 +63,12 @@ catalogue in the code is only a *fallback*. The real channel graph - which
 portal, which URL, which fields, which evidence - is resolved **live, per case,
 at the moment of the report**.
 
+![The Redress coverage map, with the live official portals discovered by TinyFish](docs/screenshot-coverage-map.png)
+
+*One sentence in, and the agent has already found the real reporting pages -
+`help.instagram.com`, `i4c.mha.gov.in`, `cert-in.org.in`, `rbi.org.in` - each
+with the reason it applies and the clock on it.*
+
 ---
 
 ## TinyFish integration (the mandatory part)
