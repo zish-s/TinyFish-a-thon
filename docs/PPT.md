@@ -1,8 +1,14 @@
 # ReclaimYourNet - KriticalHacks 2026 pitch deck (AI/ML track)
 
-> Submission: PPT + demo video + GitHub URL (optional).
+> **Live:** https://reclaim-your-net.vercel.app
+> **Repo:** the GitHub link in the submission form
+> **Demo video:** linked in the submission form
+>
 > Every slide below maps to one of the eight sections the Unstop submission form
-> asks for. Slide 3 of the appendix lists the mapping explicitly.
+> asks for. Appendix B lists the mapping explicitly.
+>
+> Speaker notes are in `docs/DEMO.md` (a timed 2m30s run) and at the bottom of
+> each slide in the .pptx.
 
 **One line:** *You describe the harm once. ReclaimYourNet finds every place it has to be
 reported, reads the real form on each of those places, pre-fills it, files it with
@@ -178,16 +184,17 @@ agent really runs; only the target changes.
 ## Slide 7 - Architecture
 
 ```
- browser (React + Vite + Tailwind)
-   |  POST /api/cases            -> explainable triage (local ML, in API)
-   |  GET  /api/cases/:id/stream -> SSE: steps, live browser URL, logs, evidence
-   |  POST /api/cases/:id/channels/:id/file  -> agent fills / submits
+ browser (React 19 + Vite + Tailwind)
+   |  POST /api/cases        -> explainable triage (local ML, in the API)
+   |  POST /api/action       -> ONE request per agent run, streamed back:
+   |     { action, case }      the case travels with the request, and the run's
+   |                           events + result come back on one connection
    v
- API (Fastify, Node 20+, TypeScript)
-   |- @reclaim/core      classifier, taxonomy, planner, redaction   (no network)
+ API (Fastify 5, Node 20+, TypeScript)
+   |- @reclaim/core      classifier, taxonomy, planner, redaction  (no network)
    |- pipeline           discover -> analyse -> review -> file -> monitor
    |- evidence           SHA-256 hash chain + PDFKit case file
-   |- store              node:sqlite (cases, evidence, monitors)
+   |- store              in-memory only. A report is never written to disk.
    v
  TinyFish
    |- Search   live portal + helpline discovery
@@ -196,9 +203,18 @@ agent really runs; only the target changes.
    |- Monitor  follow-up checks on the reported URL
 ```
 
-**The key architectural choice:** the model decides *what kind of problem this
-is*; the agent decides *what to do about it on the actual web*; the human
-decides *what actually gets submitted*. No layer can silently submit anything.
+**Three decisions that matter:**
+
+1. **The model decides *what* this is; the agent decides *what to do* on the
+   actual web; the human decides *what gets submitted*.** No layer can submit
+   anything on its own.
+2. **One request per agent run, streamed back.** A serverless platform gives
+   every request a fresh instance with no memory of the last one - so the case
+   travels with the request, and the run, the live browser preview and the
+   result all travel on one connection.
+3. **Nothing is persisted.** No account, no user database, no analytics, no
+   tracking. A report lives in the memory of the app and dies with the tab.
+   The only copy that outlives the session is the PDF the user downloads.
 
 ---
 
@@ -238,15 +254,21 @@ decides *what actually gets submitted*. No layer can silently submit anything.
 - **Coverage gaps stop being invisible.** The gap panel is the part we think
   matters most: most victims do not know that a platform report is not a legal
   record, or that a bank dispute has a 24-hour freeze window, or that an FIR is
-  required for a refund claim.
-- **Pre-emptive protection is mainstreamed.** Take It Down, StopNCII, Takedown,
-  RemoveHer and C2PA are near-unknown to the public. We surface them *at the
-  moment they are useful* - and we say so in the product, because most people do
-  not know these exist.
-- **Proof becomes a by-product.** A tamper-evident evidence chain and a printable
-  case file make a report usable with a bank, a police station or a lawyer.
-- **A measurable metric:** of the gaps we detect, what share did the user close?
-  That is the number that would show the product working.
+  required for a refund claim. That gap analysis is the product.
+- **Jurisdiction stops being generic.** "Report it to the police" is useless
+  advice. The agent resolves *whose* police - for Gurugram it found
+  `gurgaon.haryanapolice.gov.in/cyber-crime` live, because a FIR can only be
+  registered by the station with jurisdiction over where you live.
+- **Pre-emptive protection is mainstreamed.** Take It Down, StopNCII, Takedown
+  and RemoveHer are near-unknown to the public and are the cheapest defence
+  against morphed and AI-generated content. We surface them *at the moment they
+  are useful* - and we say so in the product, because most people do not know
+  they exist.
+- **Proof becomes a by-product.** A tamper-evident evidence chain and a
+  printable case file make a report usable with a bank, a police station or a
+  lawyer - and a regulator.
+- **A measurable metric:** of the gaps we detect, what share did the user
+  close? That is the number that would show the product working.
 
 ---
 
@@ -291,19 +313,24 @@ compliance-driven spend - not a discretionary "nice to have" tool.
 
 ## Slide 11 - Feasibility
 
-- **The hard part is already built and runs.** Search, Agent (SSE +
-  `output_schema`), Fetch and Monitor are all integrated and verified against
-  the live API during the build; the agent has read real forms and returned
-  structured field lists.
+- **It is already running.** https://reclaim-your-net.vercel.app - a full case,
+  from one sentence to a reference number, in under four minutes.
+- **The hard part is built and verified against the live API:** Search resolves
+  the real portals (`i4c.mha.gov.in/ncrp.aspx`, `rbi.org.in/Scripts/Complaints.aspx`,
+  `cert-in.org.in/SecurityIncident.jsp`, and `gurgaon.haryanapolice.gov.in/cyber-crime`
+  for Gurugram); the Agent read a live form and returned its real fields and
+  dropdown options; the Agent typed, submitted and returned a reference number.
 - **Zero-dependency core.** The classifier, taxonomy, planner and redaction are
   pure TypeScript with no runtime dependencies, 11 passing unit tests and a
   reproducible 5-fold evaluation script. It runs in the browser, in the API and
   in CI.
-- **Cost per user is bounded and tiny** (table above). The expensive part of the
-  product is the one-time form read per channel, and it is cached.
+- **Cost per user is bounded and tiny** (see slide 10). The expensive part is
+  the one-time form read per channel, and it is cached.
 - **Degradation is designed in.** If a portal blocks the agent, the channel is
   marked "manual" and the case continues. If the wallet runs low, search and
   fetch still work. If the network is down, triage still works.
+- **Nothing to scale.** The app is stateless: the case lives in the browser,
+  so the API is a pure function of the request.
 - **Legal and ethical posture.** The agent never invents a value, never submits
   without a second explicit human approval, never guesses a required field, and
   masks personal data by default. A tamper-evident log of exactly what was
