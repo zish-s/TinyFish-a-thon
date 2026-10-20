@@ -10,11 +10,21 @@ real agent opening a real form in a real browser.
 
 | # | Do this | Why |
 | --- | --- | --- |
-| 1 | Open the **deployed URL** (Vercel), not localhost | The TinyFish agent runs in the cloud and can only reach a public URL. A dead tunnel = a failed agent run. |
+| 1 | Open **https://reclaim-your-net.vercel.app** | The TinyFish agent runs in the cloud and can only reach a public URL. A dead tunnel = a failed agent run. The deployment is the reliable one. |
 | 2 | Check the top right shows a green dot and your TinyFish balance | If the key is wrong or the wallet is empty, nothing will run. |
-| 3 | Turn **on** the `demo forms` toggle | The agent drives a clone of the real form instead of a live Instagram page. Deterministic, fast, and it cannot be blocked. Leave it off if you want to show the real site - but expect the agent to hit a login wall. |
+| 3 | Turn **on** the `demo forms` toggle | The agent drives a clone of the real form instead of a live Instagram page. Deterministic, fast, and it cannot be blocked. Turn it **off** to show the real portals being discovered live. |
 | 4 | Open the site in a **second tab** so you can cut between the landing page and the app | The landing page is the hero shot. |
 | 5 | Have these ready: the case file PDF (from a previous run) and the PPT | If the live run is slow, you cut to a prepared artefact rather than a broken screen. |
+
+**Measured timings on the deployed app** (so you know what to say while it waits):
+
+| Step | Time |
+| --- | --- |
+| Case created | instant |
+| Live portal discovery | ~2 s |
+| Agent reads the form | ~70 s |
+| Agent fills and submits | ~100 s |
+
 
 ---
 
