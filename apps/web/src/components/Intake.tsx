@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Profile } from '../lib/api';
 import { ArrowCurve, Sparkles, Squiggle, Star, Underline } from './Doodles';
 import { HowItWorks } from './HowItWorks';
+import { Privacy } from './Privacy';
 
 const EXAMPLES = [
   {
@@ -231,6 +232,10 @@ export function Intake({
 
       <div className="mt-6">
         <HowItWorks defaultOpen />
+      </div>
+
+      <div className="mt-4">
+        <Privacy />
       </div>
     </div>
   );

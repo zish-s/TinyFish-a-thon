@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { INCIDENT_TYPES, PLATFORM_CHANNELS, AUTHORITY_CHANNELS, PROTECTION_CHANNELS, EMERGENCY_BY_COUNTRY, triage } from '@reclaim/core';
 import { bus, type CaseEvent } from './bus.js';
 import { config, hasPublicTunnel, hasTinyFish } from './env.js';
-import { getCase, listCases } from './store.js';
+import { getCase, listCases, deleteCase } from './store.js';
 import * as orch from './pipeline/orchestrator.js';
 import { renderCaseFile } from './casereport/pdf.js';
 import * as tf from './tinyfish/client.js';
@@ -89,9 +89,19 @@ export async function registerRoutes(app: FastifyInstance) {
   /* ------------------------------------------------------------- cases */
   app.post('/api/cases', async (request, reply) => {
     const body = createCaseSchema.parse(request.body);
-    const caseFile = orch.createCase(body.text, body.profile, body.country ?? config.country);
+    // A report is never written to a server-side store. It lives in this
+    // process's memory and disappears with it. `RECLAIM_PERSIST=1` is a
+    // developer-only opt-in for local experiments, and it is never set on a
+    // deployment.
+    const keep = process.env.RECLAIM_PERSIST === '1';
+    const caseFile = orch.createCase(body.text, body.profile, body.country ?? config.country, keep);
     reply.code(201);
     return caseFile;
+  });
+
+  app.delete('/api/cases/:id', async (request) => {
+    const { id } = request.params as { id: string };
+    return deleteCase(id);
   });
 
   app.get('/api/cases', async () => ({ cases: listCases() }));

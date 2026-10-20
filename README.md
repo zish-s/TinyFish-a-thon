@@ -261,6 +261,29 @@ docs/PLAN.md                  what was built, and why
 
 ---
 
+## Where your data actually goes
+
+There is **no account, no user database, no analytics and no tracking**. A report
+is **never written to disk** - it lives in the memory of the running app and
+disappears with it. Here is the complete list:
+
+| Thing | Where it goes |
+| --- | --- |
+| Reading your report (triage) | On the machine serving the app. It is a small local classifier, not a cloud LLM - your words are not sent to an AI chat service. |
+| The agent filling a form | The agent needs a real browser, and that browser runs on **TinyFish**. Only the fields that one specific form asks for are sent, and only while that form is being filled. |
+| Finding the right portal | The search sends things like *"Gurugram police online FIR"* - never your description, your name or your number. |
+| Your report | Nowhere. Not in a database, not on a server, not in the cloud. The only copy that outlives the session is the case file PDF you download. |
+| The details you approve | On the portal you approve, and nowhere else. That is the point of the product. |
+
+**"Delete this report"** clears it from memory, the evidence chain and the
+monitor list in one click.
+
+A developer-only `RECLAIM_PERSIST=1` environment variable turns on a local
+SQLite file for experimenting. It is off everywhere else, including on a
+deployment.
+
+---
+
 ## Business model
 
 Free for victims, paid for the organisations that receive the reports.

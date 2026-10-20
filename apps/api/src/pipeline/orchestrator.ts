@@ -172,7 +172,12 @@ function channelOf(caseId: string, channelId: string): Channel {
 
 /* -------------------------------------------------------------- case create */
 
-export function createCase(text: string, profile: ReporterProfile, country: string): CaseFile {
+export function createCase(
+  text: string,
+  profile: ReporterProfile,
+  country: string,
+  keep: boolean,
+): CaseFile {
   const triaged = triage(text);
   const plan = buildPlan(triaged, profile, country);
   const now = new Date().toISOString();
@@ -191,7 +196,7 @@ export function createCase(text: string, profile: ReporterProfile, country: stri
     profile,
   };
 
-  insertCase(caseFile);
+  insertCase(caseFile, keep);
   bus.publish(id, { type: 'case', caseFile });
   return caseFile;
 }

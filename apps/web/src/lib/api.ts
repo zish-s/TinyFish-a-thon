@@ -42,6 +42,9 @@ export const api = {
       body: JSON.stringify({ text, profile, country }),
     }).then((r) => json<CaseFile>(r)),
 
+  deleteCase: (id: string) =>
+    fetch(`/api/cases/${id}`, { method: 'DELETE' }).then((r) => json<{ deleted: boolean }>(r)),
+
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<{ caseFile: CaseFile; monitors: MonitorBinding[] }>(r)),
 
   discover: (id: string, sandbox: boolean) =>

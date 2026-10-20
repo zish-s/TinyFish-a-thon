@@ -8,8 +8,7 @@ import { EvidenceVault } from './components/EvidenceVault';
 import { Pricing } from './components/Pricing';
 import { YourDetails } from './components/YourDetails';
 import { MissingFields } from './components/MissingFields';
-import { Dot, SectionTitle, Tag } from './components/ui';
-import { Net } from './components/Doodles';
+import { Dot, SectionTitle, Tag } from './components/ui';import { Net } from './components/Doodles';
 
 export default function App() {
   const [caseFile, setCaseFile] = useState<CaseFile | null>(null);
@@ -159,9 +158,28 @@ export default function App() {
               </label>
             )}
             {caseFile ? (
-              <button type="button" className="btn-outline !py-1.5" onClick={reset}>
-                New report
-              </button>
+              <div className="flex items-center gap-2">
+                <Tag tone="coral">status: {caseFile.status}</Tag>
+                <button
+                  type="button"
+                  className="btn-quiet !px-2.5 !py-1.5 !text-[12.5px]"
+                  onClick={async () => {
+                    await api.deleteCase(caseFile.id);
+                    reset();
+                  }}
+                >
+                  Delete this report
+                </button>
+                <button
+                  type="button"
+                  className="btn-outline !py-1.5"
+                  onClick={() => {
+                    reset();
+                  }}
+                >
+                  New report
+                </button>
+              </div>
             ) : null}
           </div>
         </div>
