@@ -106,7 +106,7 @@ Two very different jobs, deliberately split.
 
 * **Model:** one-vs-rest L2-regularised **logistic regression** over a TF-IDF
   vector of unigrams + bigrams, from a synonym-folded, stemmed token stream.
-  14 incident types, 250 hand-labelled multi-label examples, trained with
+  14 incident types, 223 hand-labelled multi-label examples, trained with
   full-batch gradient descent + momentum.
 * **Why not an LLM?** Triage must be reproducible, offline, free and able to
   justify itself. A victim is being asked to trust a recommendation that tells
@@ -221,7 +221,7 @@ npm start       # serve the built app from the API
 ```
 packages/core/                the triage engine (no network, no dependencies)
   src/ml/classifier.ts        one-vs-rest logistic regression
-  src/ml/dataset.ts           250 hand-labelled multi-label examples
+  src/ml/dataset.ts           223 hand-labelled multi-label examples
   src/ml/tokenize.ts          synonym folding + stemming
   src/ml/redact.ts            privacy-by-default PII masking
   src/ml/entities.ts          amount / platform / URL / phone / date extraction

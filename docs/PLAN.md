@@ -49,7 +49,7 @@ against every class it does not own, so
 `financial_fraud p=0.024` as its top label.
 
 The fix was one-vs-rest **logistic regression** over TF-IDF unigrams + bigrams
-(14 incident types, 250 hand-labelled multi-label examples, full-batch gradient
+(14 incident types, 223 hand-labelled multi-label examples, full-batch gradient
 descent + momentum, L2 regularised).
 
 Honest numbers from a reproducible stratified 5-fold cross-validation
@@ -61,7 +61,7 @@ Honest numbers from a reproducible stratified 5-fold cross-validation
 | Macro precision | 0.50 |
 | Macro recall | 0.83 |
 | Top-1 label correct | 89.7% |
-| Exact label-set match | 30.0% |
+| Exact label-set match | 14.8% |
 
 It is tuned to **over-predict** on purpose: a missed label means a missed
 reporting route, and an extra channel costs a victim 20 seconds while a missing

@@ -109,7 +109,7 @@ Two very different jobs, deliberately split.
 
 **Model:** one-vs-rest L2-regularised **logistic regression** over a TF-IDF
 vector of unigrams + bigrams, drawn from a synonym-folded, stemmed token stream
-(14 incident types, 250 hand-labelled multi-label examples). Trained with
+(14 incident types, 223 hand-labelled multi-label examples). Trained with
 full-batch gradient descent + momentum.
 
 *Why not an LLM for triage?* Triage must be reproducible, offline, free, and
@@ -125,7 +125,7 @@ tells them to report their case to a government portal - "because the word
 | Macro precision | 0.50 |
 | Macro recall | 0.83 |
 | Top-1 label correct | 89.7% |
-| Exact label-set match | 30.0% |
+| Exact label-set match | 14.8% |
 
 The numbers are honest and reproducible from the committed corpus. We over-predict
 labels on purpose: in this domain a missed label means a **missed reporting
@@ -350,7 +350,7 @@ compliance-driven spend - not a discretionary "nice to have" tool.
 ```
 packages/core/           triage engine: classifier, taxonomy, planner, redaction
   src/ml/classifier.ts   one-vs-rest logistic regression (the ML)
-  src/ml/dataset.ts      250 hand-labelled multi-label examples
+  src/ml/dataset.ts      223 hand-labelled multi-label examples
   src/ml/redact.ts       privacy-by-default PII masking
   src/planner.ts         labels -> prioritised channels, deadlines, gaps
   scripts/eval-classifier.ts   reproducible 5-fold evaluation
