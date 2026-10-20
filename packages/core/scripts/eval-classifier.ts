@@ -10,6 +10,7 @@
  */
 import { IncidentClassifier } from '../src/ml/classifier.js';
 import { TRAINING_DATA } from '../src/ml/dataset.js';
+import { semanticText } from '../src/ml/entities.js';
 import { INCIDENT_TYPES } from '../src/taxonomy.js';
 import type { IncidentLabel, TrainingExample } from '../src/index.js';
 
@@ -58,7 +59,7 @@ buckets.forEach((testSet, fold) => {
   const model = new IncidentClassifier(train);
 
   for (const ex of testSet) {
-    const prediction = model.predict(ex.text);
+    const prediction = model.predict(semanticText(ex.text) || ex.text);
     const predicted = prediction.selected.length ? prediction.selected : [prediction.primaryLabel];
     evaluated += 1;
 
@@ -127,7 +128,7 @@ if (failures.length) {
 // Explainability demo - the evidence the UI shows for a recommendation.
 const full = new IncidentClassifier(TRAINING_DATA);
 const demo = 'someone made a fake instagram account using my photo and asked my friends for money';
-const p = full.predict(demo);
+const p = full.predict(semanticText(demo));
 console.log('\nexplainability demo (model trained on the full corpus)');
 console.log('-'.repeat(74));
 console.log(`input: "${demo}"`);

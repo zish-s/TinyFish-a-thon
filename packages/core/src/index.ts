@@ -7,5 +7,5 @@ export type { Prediction, LabelModel } from './ml/classifier.js';
 export { TRAINING_DATA } from './ml/dataset.js';
 export type { TrainingExample } from './ml/dataset.js';
 export { redact } from './ml/redact.js';
-export { extractEntities, detectAmountLost, mask } from './ml/entities.js';
+export { extractEntities, detectAmountLost, mask, semanticText } from './ml/entities.js';
 export { tokenize, normaliseToken, SYNONYMS } from './ml/tokenize.js';

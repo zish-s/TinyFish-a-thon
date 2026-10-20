@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 import type { AgentStep } from '@redress/core';
 import type { LogLine } from '../lib/api';
-import { Panel, StatusDot } from './ui';
+import { SectionTitle, Dot, Tag } from './ui';
 
-const STEP_TONE: Record<string, { tone: 'idle' | 'busy' | 'ok' | 'warn' | 'error' }> = {
-  pending: { tone: 'idle' },
-  running: { tone: 'busy' },
-  done: { tone: 'ok' },
-  failed: { tone: 'error' },
-};
+const TONE = {
+  pending: 'idle',
+  running: 'busy',
+  done: 'ok',
+  failed: 'error',
+} as const;
 
 export function AgentTheatre({
   steps,
@@ -28,98 +28,81 @@ export function AgentTheatre({
   const running = steps.find((s) => s.status === 'running');
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.25fr_1fr]">
-      <Panel
-        title="Live agent view"
-        action={
-          <span className="flex items-center gap-2 text-[11px] text-slate-500">
-            {running ? (
-              <>
-                <StatusDot tone="busy" /> TinyFish browser is live
-              </>
-            ) : (
-              <>
-                <StatusDot tone="idle" /> idle
-              </>
-            )}
-          </span>
-        }
-      >
+    <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+      <div>
+        <SectionTitle
+          eyebrow="Live"
+          title="What the agent is doing"
+          action={
+            <span className="flex items-center gap-2 text-xs text-slate-500">
+              <Dot tone={running ? 'busy' : 'idle'} />
+              {running ? 'browser is live' : 'idle'}
+            </span>
+          }
+        />
         {streamingUrl ? (
-          <div className="relative overflow-hidden rounded-xl border border-ink-700 bg-black">
-            <iframe
-              title="TinyFish live browser"
-              src={streamingUrl}
-              className="aspect-video w-full"
-              allow="clipboard-read; clipboard-write"
-            />
-            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent px-3 py-2 text-[11px] text-slate-300">
-              <span className="font-mono">{running?.channelName ?? 'agent'}</span>
-              <span className="font-mono text-slate-500">read-only preview</span>
-            </div>
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
+            <iframe title="Agent browser" src={streamingUrl} className="aspect-video w-full" />
           </div>
         ) : (
-          <div className="grid-lines flex aspect-video w-full flex-col items-center justify-center rounded-xl border border-dashed border-ink-700 text-center">
-            <p className="text-sm text-slate-500">
-              The agent's browser appears here the moment a run starts.
-            </p>
-            <p className="mt-1 text-[12px] text-slate-600">
-              Pick a channel and press <span className="text-brand-300">Read the live form</span> or{' '}
-              <span className="text-brand-300">Fill &amp; submit</span>.
-            </p>
+          <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-center">
+            <p className="text-sm text-slate-500">The agent's browser shows up here when it starts working.</p>
+            <p className="mt-1 text-[13px] text-slate-400">Pick a channel and press “Read the form”.</p>
           </div>
         )}
-      </Panel>
+      </div>
 
-      <div className="space-y-4">
-        <Panel title="Agent timeline">
+      <div className="space-y-6">
+        <div>
+          <SectionTitle eyebrow="Steps" title="Timeline" />
           {steps.length === 0 ? (
-            <p className="text-[13px] text-slate-500">No agent runs yet.</p>
+            <p className="text-[13.5px] text-slate-400">Nothing yet.</p>
           ) : (
-            <ol className="space-y-2.5">
-              {steps.map((step) => {
-                const tone = STEP_TONE[step.status] ?? STEP_TONE.pending;
-                return (
-                  <li key={step.id} className="flex gap-3">
-                    <div className="mt-1.5">
-                      <StatusDot tone={tone.tone} />
+            <ol className="space-y-3">
+              {steps.map((step) => (
+                <li key={step.id} className="flex gap-3">
+                  <div className="mt-1.5">
+                    <Dot tone={TONE[step.status]} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="text-[14px] font-medium text-slate-800">{step.channelName}</span>
+                      <span className="text-[11px] text-slate-400">
+                        {step.finishedAt && step.startedAt
+                          ? `${Math.max(0, Math.round((Date.parse(step.finishedAt) - Date.parse(step.startedAt)) / 1000))}s`
+                          : step.status}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="text-[13px] font-medium text-slate-200">{step.channelName}</span>
-                        <span className="font-mono text-[10.5px] text-slate-500">
-                          {step.finishedAt && step.startedAt
-                            ? `${Math.max(0, Math.round((Date.parse(step.finishedAt) - Date.parse(step.startedAt)) / 1000))}s`
-                            : step.status}
-                        </span>
-                      </div>
-                      <p className="text-[12px] leading-relaxed text-slate-500">{step.purpose}</p>
-                      {step.error && <p className="mt-0.5 text-[11.5px] text-rose-300">{step.error}</p>}
-                    </div>
-                  </li>
-                );
-              })}
+                    <p className="text-[13px] leading-relaxed text-slate-500">{step.purpose}</p>
+                    {step.error && <p className="mt-0.5 text-[12px] text-rose-600">{step.error}</p>}
+                  </div>
+                </li>
+              ))}
             </ol>
           )}
-        </Panel>
+        </div>
 
-        <Panel title="Run log">
-          <div ref={logRef} className="scroll-thin max-h-56 space-y-1 overflow-y-auto pr-1 font-mono text-[11.5px]">
+        <div>
+          <SectionTitle eyebrow="Log" title="Run log" />
+          <div
+            ref={logRef}
+            className="scroll-thin max-h-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 font-mono text-[12px] leading-relaxed"
+          >
             {logs.length === 0 ? (
-              <p className="text-slate-600">Waiting for the first event...</p>
+              <p className="text-slate-400">Waiting for the first event...</p>
             ) : (
               logs.map((line, i) => (
                 <div key={i} className="flex gap-2">
-                  <span className="text-slate-600">{new Date(line.ts).toLocaleTimeString()}</span>
+                  <span className="shrink-0 text-slate-300">{new Date(line.ts).toLocaleTimeString()}</span>
                   <span
                     className={
                       line.level === 'error'
-                        ? 'text-rose-300'
+                        ? 'text-rose-600'
                         : line.level === 'warn'
-                          ? 'text-alert-400'
+                          ? 'text-amber-600'
                           : line.level === 'success'
-                            ? 'text-brand-300'
-                            : 'text-slate-400'
+                            ? 'text-brand-700'
+                            : 'text-slate-500'
                     }
                   >
                     {line.message}
@@ -128,8 +111,13 @@ export function AgentTheatre({
               ))
             )}
           </div>
-        </Panel>
+        </div>
       </div>
     </div>
   );
+}
+
+export function StatusLine({ status }: { status: string }) {
+  const tone = status === 'filed' ? 'brand' : status === 'failed' ? 'rose' : 'slate';
+  return <Tag tone={tone as 'brand' | 'rose' | 'slate'}>{status}</Tag>;
 }

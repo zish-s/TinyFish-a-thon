@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Panel, Pill } from './ui';
+import { SectionTitle, Tag } from './ui';
 
 interface Plan {
   id: string;
@@ -24,46 +24,44 @@ export function Pricing() {
   if (!data) return null;
 
   return (
-    <div className="space-y-4">
-      <Panel title="How Redress pays for itself" action={<Pill tone="brand">freemium consumer + B2B API</Pill>}>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {data.plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`panel-inset flex flex-col p-4 ${
-                plan.id === 'api' ? 'border-brand-500/40 bg-brand-500/[0.06]' : ''
-              }`}
-            >
-              <div className="flex items-baseline justify-between">
-                <h4 className="text-sm font-semibold text-slate-100">{plan.name}</h4>
-                {plan.id === 'api' && <Pill tone="brand">the money</Pill>}
-              </div>
-              <div className="mt-2 font-mono text-2xl font-bold text-white">
-                {plan.price === 0 ? 'Free' : `$${plan.price}`}
-                <span className="ml-1 text-xs font-normal text-slate-500">{plan.unit}</span>
-              </div>
-              <p className="mt-1 text-[12px] text-slate-400">{plan.for}</p>
-              <ul className="mt-3 flex-1 space-y-1.5">
-                {plan.includes.map((inc) => (
-                  <li key={inc} className="flex gap-2 text-[12px] leading-relaxed text-slate-400">
-                    <span className="text-brand-500">▸</span>
-                    {inc}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 border-t border-ink-700 pt-2 text-[11px] text-slate-500">{plan.limit}</div>
+    <div>
+      <SectionTitle eyebrow="Plans" title="What it costs" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {data.plans.map((plan) => (
+          <div
+            key={plan.id}
+            className={`card flex flex-col p-5 ${plan.id === 'api' ? 'border-brand-300 ring-1 ring-brand-200' : ''}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-[15px] font-bold text-slate-900">{plan.name}</h4>
+              {plan.id === 'api' && <Tag tone="brand">the business one</Tag>}
             </div>
-          ))}
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {Object.entries(data.unitEconomics).map(([k, v]) => (
-            <div key={k} className="panel-inset px-3.5 py-3">
-              <div className="label">{k.replace(/([A-Z])/g, ' $1')}</div>
-              <div className="mt-1 font-mono text-sm text-slate-200">{v}</div>
+            <div className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              {plan.price === 0 ? 'Free' : `$${plan.price}`}
+              <span className="ml-1 text-xs font-normal text-slate-400">{plan.unit}</span>
             </div>
-          ))}
-        </div>
-      </Panel>
+            <p className="mt-2 text-[13px] leading-relaxed text-slate-500">{plan.for}</p>
+            <ul className="mt-4 flex-1 space-y-2">
+              {plan.includes.map((inc) => (
+                <li key={inc} className="flex gap-2 text-[13px] leading-relaxed text-slate-600">
+                  <span className="text-brand-600">✓</span>
+                  {inc}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 border-t border-slate-200 pt-3 text-[11.5px] text-slate-400">{plan.limit}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {Object.entries(data.unitEconomics).map(([k, v]) => (
+          <div key={k} className="card p-4">
+            <div className="eyebrow">{k.replace(/([A-Z])/g, ' $1')}</div>
+            <div className="mt-1 font-mono text-[13px] text-slate-700">{v}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -67,7 +67,8 @@ at the moment of the report**.
 
 *One sentence in, and the agent has already found the real reporting pages -
 `help.instagram.com`, `i4c.mha.gov.in`, `cert-in.org.in`, `rbi.org.in` - each
-with the reason it applies and the clock on it.*
+with the reason it applies, the clock on it, and an honest note about what you
+are still missing.*
 
 ---
 

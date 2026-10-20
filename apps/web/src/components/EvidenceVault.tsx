@@ -1,5 +1,5 @@
 import type { EvidenceItem, MonitorBinding } from '@redress/core';
-import { Panel, Pill, Empty } from './ui';
+import { SectionTitle, Tag } from './ui';
 
 export function EvidenceVault({
   evidence,
@@ -15,49 +15,41 @@ export function EvidenceVault({
   armed: boolean;
 }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
-      <Panel
-        title="Evidence chain"
-        action={
-          <a
-            href={`/api/cases/${caseId}/casefile.pdf`}
-            className="btn-ghost text-xs"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Download case file (PDF)
-          </a>
-        }
-      >
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div>
+        <SectionTitle
+          eyebrow="Proof"
+          title="Your evidence"
+          action={
+            <a href={`/api/cases/${caseId}/casefile.pdf`} className="btn-outline" target="_blank" rel="noreferrer">
+              Download case file
+            </a>
+          }
+        />
         {evidence.length === 0 ? (
-          <Empty>
-            No evidence captured yet. Every form the agent reads and every reference number it gets back is added here
-            with a SHA-256 hash chained to the previous record.
-          </Empty>
+          <p className="text-[13.5px] leading-relaxed text-slate-500">
+            Every form the agent reads and every reference number it gets back is recorded here, hashed and chained, so
+            you can prove what was filed and when.
+          </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {evidence.map((item) => (
-              <div key={item.id} className="panel-inset p-3.5">
+              <div key={item.id} className="card p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[13px] font-medium text-slate-200">{item.label}</span>
-                  <Pill tone="neutral">{item.kind.replace('_', ' ')}</Pill>
+                  <span className="text-[14px] font-semibold text-slate-800">{item.label}</span>
+                  <Tag tone="slate">{item.kind.replace('_', ' ')}</Tag>
                 </div>
                 {item.url && (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-0.5 block truncate font-mono text-[11px] text-slate-500 hover:text-brand-300"
-                  >
+                  <a href={item.url} target="_blank" rel="noreferrer" className="link mt-1 block truncate">
                     {item.url}
                   </a>
                 )}
                 {item.content && (
-                  <pre className="scroll-thin mt-2 max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-ink-950/70 p-2.5 font-mono text-[11px] leading-relaxed text-slate-400">
-                    {item.content.slice(0, 1200)}
+                  <pre className="scroll-thin mt-2.5 max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-mono text-[11.5px] leading-relaxed text-slate-600">
+                    {item.content.slice(0, 1000)}
                   </pre>
                 )}
-                <div className="mt-2 space-y-0.5 font-mono text-[10.5px] text-slate-600">
+                <div className="mt-2.5 space-y-0.5 font-mono text-[10.5px] text-slate-400">
                   <div>sha256 {item.hash}</div>
                   <div>prev {item.prevHash}</div>
                 </div>
@@ -65,36 +57,38 @@ export function EvidenceVault({
             ))}
           </div>
         )}
-      </Panel>
+      </div>
 
-      <Panel
-        title="Follow-up monitoring"
-        action={
-          <button type="button" className="btn-primary text-xs" onClick={onArm} disabled={armed}>
-            {armed ? 'Monitors armed' : 'Arm follow-up'}
-          </button>
-        }
-      >
+      <div>
+        <SectionTitle
+          eyebrow="Follow-up"
+          title="Watching for takedowns"
+          action={
+            <button type="button" className="btn-outline" onClick={onArm} disabled={armed}>
+              {armed ? 'Armed' : 'Start watching'}
+            </button>
+          }
+        />
         {monitors.length === 0 ? (
-          <Empty>
-            Nothing is being watched yet. Arming a monitor makes TinyFish re-check the reported URL on a schedule and
-            tell you when the content actually comes down - or when it does not.
-          </Empty>
+          <p className="text-[13.5px] leading-relaxed text-slate-500">
+            Once something is filed, we can keep checking the page every few hours and tell you whether the content
+            actually came down - or quietly came back.
+          </p>
         ) : (
           <div className="space-y-2.5">
             {monitors.map((m) => (
-              <div key={m.id} className="panel-inset p-3.5">
+              <div key={m.id} className="card p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[13px] font-medium text-slate-200">{m.channelName}</span>
-                  <Pill tone={m.status === 'active' ? 'brand' : 'neutral'}>{m.status}</Pill>
+                  <span className="text-[14px] font-semibold text-slate-800">{m.channelName}</span>
+                  <Tag tone={m.status === 'active' ? 'brand' : 'slate'}>{m.status}</Tag>
                 </div>
-                <p className="mt-1 font-mono text-[11px] text-slate-500">{m.target}</p>
-                <p className="mt-1 text-[12px] text-slate-400">{m.purpose}</p>
+                <p className="mt-1 font-mono text-[11.5px] text-slate-400">{m.target}</p>
+                <p className="mt-1.5 text-[13px] text-slate-600">{m.purpose}</p>
               </div>
             ))}
           </div>
         )}
-      </Panel>
+      </div>
     </div>
   );
 }

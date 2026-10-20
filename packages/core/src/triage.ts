@@ -1,6 +1,6 @@
 import type { IncidentLabel, LabelScore, ReporterProfile, TriageResult, Urgency } from './types.js';
 import { classifier } from './ml/classifier.js';
-import { detectAmountLost, extractEntities } from './ml/entities.js';
+import { detectAmountLost, extractEntities, semanticText } from './ml/entities.js';
 import { redact } from './ml/redact.js';
 import { getIncidentType } from './taxonomy.js';
 
@@ -56,7 +56,9 @@ export function decideUrgency(signals: string[]): { urgency: Urgency; reasons: s
 }
 
 export function triage(text: string): TriageResult {
-  const prediction = classifier.predict(text);
+  // The model reads the semantics only; URLs, handles and numbers are pulled
+  // out separately so they cannot change the labels.
+  const prediction = classifier.predict(semanticText(text) || text);
   const entities = extractEntities(text);
   const { text: redactedText, redactions } = redact(text);
 

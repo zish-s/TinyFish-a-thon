@@ -119,6 +119,24 @@ export function extractEntities(text: string): ExtractedEntity[] {
   return out;
 }
 
+/**
+ * The text that actually carries meaning for classification.
+ *
+ * URLs, emails, handles and bare numbers are structured data, not semantics -
+ * but they are long, and they dilute a tf-idf vector, so a description with a
+ * link in it would otherwise be classified differently from the same
+ * description without one. We strip them before the model sees the text and
+ * keep them for the entity extractor and the forms.
+ */
+export function semanticText(text: string): string {
+  return text
+    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, ' ')
+    .replace(/[\w.+-]+@[\w.-]+\.\w+/g, ' ')
+    .replace(/(?<![\w])\d+(?:[.,]\d+)*(?![\w])/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function mask(value: string, keep = 2): string {
   const v = value.replace(/\s+/g, ' ').trim();
   if (v.length <= keep * 2) return '*'.repeat(Math.max(v.length, 1));
