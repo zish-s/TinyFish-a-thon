@@ -1,0 +1,428 @@
+import type {
+  Channel,
+  ChannelField,
+  CoverageGap,
+  CoveragePlan,
+  IncidentLabel,
+  TriageResult,
+} from './types.js';
+import { AUTHORITY_CHANNELS, EMERGENCY_BY_COUNTRY, PLATFORM_CHANNELS, PROTECTION_CHANNELS, labelName } from './taxonomy.js';
+import type { ReporterProfile } from './triage.js';
+
+const PLATFORM_ENTITY_TO_CHANNEL: Record<string, string> = {
+  Instagram: 'instagram',
+  Facebook: 'facebook',
+  WhatsApp: 'whatsapp',
+  'X (Twitter)': 'x',
+  LinkedIn: 'linkedin',
+  Telegram: 'telegram',
+  YouTube: 'youtube',
+  TikTok: 'tiktok',
+  Google: 'google',
+  Email: 'email',
+};
+
+/** Which platforms a label usually lives on. Used when the user does not name one. */
+const LABEL_PLATFORM_DEFAULTS: Partial<Record<IncidentLabel, string[]>> = {
+  impersonation: ['instagram', 'facebook', 'x'],
+  financial_fraud: ['whatsapp', 'instagram'],
+  image_misuse: ['instagram', 'facebook'],
+  harassment: ['instagram', 'whatsapp', 'x'],
+  hate_speech: ['x', 'facebook', 'instagram'],
+  stalking: ['instagram', 'facebook'],
+  doxxing: ['instagram', 'facebook', 'x'],
+  misinformation: ['x', 'facebook'],
+  defamation: ['x', 'facebook', 'linkedin'],
+  child_safety: ['instagram', 'facebook'],
+  account_takeover: ['instagram', 'whatsapp', 'email'],
+  sextortion: ['instagram', 'whatsapp'],
+  counterfeit: ['instagram', 'linkedin'],
+  romance_scam: ['instagram', 'telegram', 'whatsapp'],
+};
+
+const LABEL_AUTHORITY: Partial<Record<IncidentLabel, string[]>> = {
+  financial_fraud: ['cybercrime_fraud', 'bank_fraud'],
+  romance_scam: ['cybercrime_fraud', 'bank_fraud'],
+  account_takeover: ['cert_ind', 'bank_fraud'],
+  child_safety: ['ncmec'],
+  sextortion: ['ncmec'],
+  doxxing: ['local_police'],
+  hate_speech: ['women_commission'],
+  harassment: ['women_commission', 'police_women_helpline'],
+  stalking: ['women_commission', 'police_women_helpline'],
+};
+
+function findEntity(triage: TriageResult, type: string): string | undefined {
+  return triage.entities.find((e) => e.type === type)?.value;
+}
+
+export function buildNarrative(triage: TriageResult, profile: ReporterProfile): string {
+  const parts: string[] = [];
+  const platform = findEntity(triage, 'platform');
+  const target = findEntity(triage, 'url') ?? findEntity(triage, 'handle');
+  const amount = findEntity(triage, 'amount');
+  const date = findEntity(triage, 'date');
+  const location = findEntity(triage, 'location');
+
+  parts.push(
+    `On ${date ?? 'the date of this complaint'}, I discovered${platform ? ` on ${platform}` : ''} that ${
+      target ? `the account/post at ${target}` : 'an account or post'
+    } is ${labelName(triage.primaryLabel).toLowerCase()}.`,
+  );
+
+  const secondary = triage.labels
+    .filter((l) => l.probability >= 0.5 && l.label !== triage.primaryLabel)
+    .slice(0, 2)
+    .map((l) => labelName(l.label).toLowerCase());
+  if (secondary.length) {
+    parts.push(`The same content also involves ${secondary.join(' and ')}.`);
+  }
+
+  if (amount) {
+    parts.push(
+      `A financial loss of approximately ${amount} has occurred and I am reporting it within 24 hours so that a freeze can be attempted.`,
+    );
+  }
+
+  if (triage.hardSignals.includes('threat_to_safety')) {
+    parts.push('The account has made explicit threats against me and I do not feel safe.');
+  }
+  if (triage.hardSignals.includes('minor_involved')) {
+    parts.push('A minor is involved and this needs to be escalated immediately.');
+  }
+  if (triage.hardSignals.includes('intimate_content')) {
+    parts.push('Intimate content is being used to coerce me. Please treat this as an urgent privacy and extortion matter.');
+  }
+
+  parts.push(
+    'I have preserved screenshots, the account link and the timestamps of the content, and I am available to provide the original device for examination.',
+  );
+
+  if (profile.city) parts.push(`I am currently based in ${profile.city}.`);
+
+  return parts.join(' ');
+}
+
+function valueForField(
+  field: ChannelField,
+  triage: TriageResult,
+  profile: ReporterProfile,
+  narrative: string,
+): string {
+  const lower = field.name.toLowerCase();
+  if (field.name === 'category' || lower === 'category' || lower === 'issue' || lower === 'issue type') {
+    const options = field.options ?? [];
+    if (options.length) {
+      const label = labelName(triage.primaryLabel).toLowerCase();
+      const match = options.find((o) => o.toLowerCase().includes(label.split(' ')[0])) ??
+        options.find((o) => {
+          const map: Record<string, string> = {
+            impersonation: 'impersonation',
+            financial_fraud: 'scam',
+            image_misuse: 'impersonation',
+            harassment: 'harassment',
+            hate_speech: 'harassment',
+            stalking: 'harassment',
+            doxxing: 'harassment',
+            misinformation: 'harassment',
+            defamation: 'harassment',
+            account_takeover: 'hacked',
+            sextortion: 'harassment',
+            counterfeit: 'scam',
+            romance_scam: 'scam',
+            child_safety: 'harassment',
+          };
+          return o.toLowerCase().includes(map[triage.primaryLabel] ?? '');
+        });
+      if (match) return match;
+    }
+    return options[0] ?? '';
+  }
+
+  switch (true) {
+    case lower.includes('name') && !lower.includes('username') && !lower.includes('profile'):
+      return profile.name ?? '';
+    case lower.includes('email'):
+      return profile.email ?? '';
+    case lower.includes('mobile') || lower.includes('phone') || lower.includes('callback') || lower.includes('number') && !lower.includes('account'):
+      return profile.phone ?? '';
+    case lower.includes('address') || lower.includes('district'):
+      return profile.address ?? profile.city ?? '';
+    case lower.includes('city'):
+      return profile.city ?? '';
+    case lower.includes('amount') || lower.includes('lost'):
+      return findEntity(triage, 'amount') ?? '';
+    case lower.includes('date') && !lower.includes('birth'):
+      return findEntity(triage, 'date') ?? new Date().toISOString().slice(0, 10);
+    case lower.includes('url') || lower.includes('link') || lower.includes('post') || lower.includes('username') || lower.includes('profile_url') || lower.includes('target') || lower.includes('account'):
+      return findEntity(triage, 'url') ?? findEntity(triage, 'handle') ?? '';
+    case lower.includes('description') || lower.includes('details') || lower.includes('narrative') || lower.includes('complaint') || lower.includes('what happened'):
+      return narrative;
+    case lower.includes('transaction') || lower.includes('utr'):
+      return '';
+    case lower.includes('beneficiary') || lower.includes('receiving'):
+      return findEntity(triage, 'upi') ?? findEntity(triage, 'phone') ?? '';
+    case lower.includes('last4') || lower.includes('last 4'):
+      return findEntity(triage, 'account_number') ?? '';
+    default:
+      return '';
+  }
+}
+
+function trustForUrl(url: string, knownDomains: string[]): number {
+  let host = '';
+  try {
+    host = new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    host = url;
+  }
+  if (knownDomains.some((d) => host === d || host.endsWith(`.${d}`))) return 0.95;
+  if (/\.(gov|gov\.[a-z]{2}|ac\.uk|edu\.[a-z]{2})$/.test(host)) return 0.92;
+  if (host.endsWith('.nic.in')) return 0.9;
+  if (host.endsWith('.org') || host.endsWith('.com') || host.endsWith('.net')) return 0.6;
+  return 0.5;
+}
+
+/**
+ * Builds the values for a set of form fields. Used twice: once for the
+ * seeded field list, and again after the live agent has read the real form,
+ * so the draft always matches the fields the page actually has.
+ */
+export function buildDraft(
+  fields: ChannelField[],
+  triage: TriageResult,
+  profile: ReporterProfile,
+  narrative: string,
+): Record<string, string> {
+  const draft: Record<string, string> = {};
+  for (const field of fields) {
+    draft[field.name] = valueForField(field, triage, profile, narrative);
+  }
+  return draft;
+}
+
+export function buildPlan(triage: TriageResult, profile: ReporterProfile, country = 'IN'): CoveragePlan {
+  const narrative = buildNarrative(triage, profile);
+  const activeLabels = triage.activeLabels?.length ? triage.activeLabels : [triage.primaryLabel];
+
+  const channels: Channel[] = [];
+
+  // ---- platform channels -------------------------------------------------
+  const detected = triage.entities
+    .filter((e) => e.type === 'platform')
+    .map((e) => PLATFORM_ENTITY_TO_CHANNEL[e.value])
+    .filter((id): id is string => Boolean(id));
+
+  const platformIds: string[] = [];
+  for (const id of detected) if (!platformIds.includes(id)) platformIds.push(id);
+  for (const label of activeLabels) {
+    for (const id of LABEL_PLATFORM_DEFAULTS[label] ?? []) {
+      if (!platformIds.includes(id) && platformIds.length < 4) platformIds.push(id);
+    }
+  }
+
+  for (const id of platformIds.slice(0, 4)) {
+    const def = PLATFORM_CHANNELS.find((p) => p.id === id);
+    if (!def) continue;
+    const triggeredBy = activeLabels.filter((l) => (LABEL_PLATFORM_DEFAULTS[l] ?? []).includes(id) || detected.includes(id));
+    channels.push({
+      id: def.id,
+      name: def.name,
+      kind: def.kind,
+      jurisdiction: 'GLOBAL',
+      url: `https://${def.domains[0]}/`,
+      why: def.purpose,
+      triggeredBy: triggeredBy.length ? triggeredBy : activeLabels.slice(0, 1),
+      requiredFields: def.fields,
+      requiredEvidence: ['Screenshot of the content', 'The exact link', 'Date and time of the incident'],
+      slaHours: def.slaHours,
+      slaNote: def.slaNote,
+      status: 'planned',
+      source: 'seed',
+      trust: trustForUrl(def.domains[0], def.domains),
+      priority: 'now',
+      draft: {},
+    });
+  }
+
+  // ---- authority channels ------------------------------------------------
+  const authorityIds = new Set<string>();
+  for (const label of activeLabels) {
+    for (const id of LABEL_AUTHORITY[label] ?? []) authorityIds.add(id);
+  }
+  if (triage.hardSignals.includes('money_lost')) {
+    authorityIds.add('cybercrime_fraud');
+    authorityIds.add('bank_fraud');
+  }
+  if (triage.hardSignals.includes('threat_to_safety')) authorityIds.add('local_police');
+  if (triage.hardSignals.includes('minor_involved')) authorityIds.add('ncmec');
+  if (triage.urgency === 'high' || triage.urgency === 'critical') authorityIds.add('cybercrime_portal');
+  if (triage.urgency === 'critical') authorityIds.add('local_police');
+
+  for (const def of AUTHORITY_CHANNELS) {
+    if (!authorityIds.has(def.id)) continue;
+    if (def.country !== 'IN' && def.country !== 'GLOBAL') continue;
+    if (def.country === 'IN' && country !== 'IN') continue;
+    if (def.minUrgency === 'critical' && triage.urgency !== 'critical') continue;
+    if (def.minUrgency === 'high' && triage.urgency === 'normal') continue;
+    const triggeredBy = activeLabels.filter((l) =>
+      (def.appliesTo ?? []).length === 0 ? true : (def.appliesTo ?? []).includes(l),
+    );
+    channels.push({
+      id: def.id,
+      name: def.name,
+      kind: def.kind,
+      jurisdiction: def.country,
+      url: def.url,
+      why: def.purpose,
+      triggeredBy: triggeredBy.length ? triggeredBy : activeLabels.slice(0, 1),
+      requiredFields: def.fields,
+      requiredEvidence: ['Screenshots of the offending content', 'A timeline of events', 'Your contact details'],
+      slaHours: def.slaHours,
+      slaNote: def.slaNote,
+      status: 'planned',
+      source: 'seed',
+      trust: trustForUrl(def.url, []),
+      priority: 'now',
+      draft: {},
+    });
+  }
+
+  // ---- pre-emptive protection channels ---------------------------------
+  // These are the services you arm BEFORE the harm happens: upload once and
+  // they pull your content back if it is ever uploaded - including morphed
+  // or AI-generated copies.
+  for (const def of PROTECTION_CHANNELS) {
+    const applies = def.appliesTo ?? [];
+    const rel = applies.length === 0 ? false : activeLabels.some((l) => applies.includes(l));
+    if (!rel) continue;
+    const triggeredBy = activeLabels.filter((l) => applies.includes(l));
+    channels.push({
+      id: def.id,
+      name: def.name,
+      kind: def.kind,
+      jurisdiction: 'GLOBAL',
+      url: def.url,
+      why: def.purpose,
+      triggeredBy,
+      requiredFields: def.fields,
+      requiredEvidence: ['The content itself (photo, video or file)'],
+      slaHours: def.slaHours,
+      slaNote: def.slaNote,
+      status: 'planned',
+      source: 'seed',
+      trust: trustForUrl(def.url, []),
+      priority: 'now',
+      draft: {},
+    });
+  }
+
+  // ---- drafts ------------------------------------------------------------
+  for (const channel of channels) {
+    channel.draft = buildDraft(channel.requiredFields, triage, profile, narrative);
+    channel.narrative = narrative;
+  }
+
+  // ---- gaps --------------------------------------------------------------
+  const gaps: CoverageGap[] = [];
+  const has = (id: string) => channels.some((c) => c.id === id);
+
+  if (triage.hardSignals.includes('money_lost') && !has('local_police')) {
+    gaps.push({
+      id: 'no_fir',
+      title: 'No police FIR in the plan',
+      detail: 'Money was lost. A cybercrime portal complaint is not enough: banks and courts want an FIR, and only an FIR starts the clock on a refund claim.',
+      severity: 'blocker',
+      action: 'Add your local cyber cell / police station to the plan, or apply for an FIR at the station.',
+    });
+  }
+  if (triage.hardSignals.includes('minor_involved')) {
+    gaps.push({
+      id: 'minor_report',
+      title: 'Mandatory child-safety report',
+      detail: 'Content involving a minor must be reported to the child-safety reporting body in addition to the police.',
+      severity: 'blocker',
+      action: 'Make sure the child-safety channel in your plan is submitted today.',
+    });
+  }
+  if (triage.hardSignals.includes('threat_to_safety')) {
+    const emergency = EMERGENCY_BY_COUNTRY[country] ?? EMERGENCY_BY_COUNTRY.GLOBAL;
+    gaps.push({
+      id: 'call_emergency',
+      title: 'Call for immediate help',
+      detail: `Your description mentions a threat. Forms take hours; a phone call does not. Emergency number: ${emergency.police}.`,
+      severity: 'blocker',
+      action: `Call ${emergency.police} now, then file the forms in this plan as the written record.`,
+    });
+  }
+  if (triage.hardSignals.includes('identity_exposed')) {
+    gaps.push({
+      id: 'identity_rotate',
+      title: 'Rotate the exposed identity documents',
+      detail: 'If an Aadhaar/PAN/card number was published, filing alone is not enough - the credential has to be changed.',
+      severity: 'important',
+      action: 'Reissue the exposed document and close the old one.',
+    });
+  }
+
+  const missingFields = channels.reduce(
+    (acc, c) => acc + c.requiredFields.filter((f) => f.required && !c.draft[f.name]).length,
+    0,
+  );
+  if (missingFields > 0) {
+    gaps.push({
+      id: 'missing_fields',
+      title: `${missingFields} required field${missingFields === 1 ? '' : 's'} still need you`,
+      detail: 'The agent will not guess a required field on a government or bank form. Fill the highlighted blanks and the agent will continue.',
+      severity: 'important',
+      action: 'Open the highlighted channels and complete the missing fields.',
+    });
+  }
+
+  if (channels.length > 0 && !channels.some((c) => c.kind === 'authority') && triage.urgency !== 'normal') {
+    gaps.push({
+      id: 'no_authority',
+      title: 'Only platform reports are planned',
+      detail: 'Platform reports can remove content but do not create a legal record. For anything involving money, threats or identity, you also need an authority channel.',
+      severity: 'important',
+      action: 'Add the national cybercrime reporting portal for your country.',
+    });
+  }
+
+  const estimatedMinutes = Math.max(4, channels.length * 3 + (triage.hardSignals.includes('money_lost') ? 15 : 0));
+
+  // ---- prioritisation ----------------------------------------------------
+  // A victim cannot do twenty things at once. The plan is ranked so the first
+  // screen is the handful of steps that actually stop the harm, and the rest
+  // stay visible as "also do this" rather than being hidden.
+  const kindRank: Record<string, number> = {
+    financial: 0,
+    authority: 1,
+    platform: 2,
+    protection: 3,
+    support: 4,
+    escalation: 5,
+  };
+  const protectionIsUrgent =
+    activeLabels.includes('sextortion') ||
+    activeLabels.includes('child_safety') ||
+    activeLabels.includes('image_misuse');
+
+  channels.sort((a, b) => {
+    const rankA = kindRank[a.kind] ?? 6;
+    const rankB = kindRank[b.kind] ?? 6;
+    const adjustedA = a.kind === 'protection' && protectionIsUrgent ? 2.5 : rankA;
+    const adjustedB = b.kind === 'protection' && protectionIsUrgent ? 2.5 : rankB;
+    if (adjustedA !== adjustedB) return adjustedA - adjustedB;
+    const slaA = a.slaHours === null ? Number.MAX_SAFE_INTEGER : a.slaHours;
+    const slaB = b.slaHours === null ? Number.MAX_SAFE_INTEGER : b.slaHours;
+    return slaA - slaB;
+  });
+
+  const nowCount = Math.min(8, channels.length);
+  channels.forEach((channel, index) => {
+    channel.priority = index < nowCount ? 'now' : 'later';
+  });
+
+  return { channels, gaps, estimatedMinutes, jurisdiction: country };
+}
