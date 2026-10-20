@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "apps/web/dist",
+  "functions": {
+    "api/**/*.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    }
+  },
+  "env": {
+    "DATA_DIR": "/tmp/redress",
+    "DEFAULT_COUNTRY": "IN",
+    "DEFAULT_LANG": "en"
+  }
+}
