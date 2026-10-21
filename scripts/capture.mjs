@@ -106,6 +106,9 @@ const scrollTo = async (pattern, offset = 60) => {
 /**
  * Scrolls the whole card into view, rather than just its heading, so the
  * screenshot shows the card and not a slice of it.
+ *
+ * The card is found by walking up from the heading to the first ancestor
+ * that is actually big enough to be a card.
  */
 const scrollCardTo = async (pattern, top = 16) => {
   await page.evaluate(
@@ -114,7 +117,13 @@ const scrollCardTo = async (pattern, top = 16) => {
       const all = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
       const h = all.find((x) => new RegExp(p, 'i').test(x.textContent));
       if (!h) return;
-      const card = h.parentElement?.parentElement ?? h;
+      let card = h;
+      for (let el = h.parentElement; el && el !== document.body; el = el.parentElement) {
+        if (el.getBoundingClientRect().height > 350) {
+          card = el;
+          break;
+        }
+      }
       const y = card.getBoundingClientRect().top + window.scrollY - t;
       window.scrollTo({ top: y, behavior: 'instant' });
     },
