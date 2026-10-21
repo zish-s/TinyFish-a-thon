@@ -103,6 +103,27 @@ const scrollTo = async (pattern, offset = 60) => {
   await sleep(900);
 };
 
+/**
+ * Scrolls the whole card into view, rather than just its heading, so the
+ * screenshot shows the card and not a slice of it.
+ */
+const scrollCardTo = async (pattern, top = 16) => {
+  await page.evaluate(
+    (p, t) => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      const all = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
+      const h = all.find((x) => new RegExp(p, 'i').test(x.textContent));
+      if (!h) return;
+      const card = h.parentElement?.parentElement ?? h;
+      const y = card.getBoundingClientRect().top + window.scrollY - t;
+      window.scrollTo({ top: y, behavior: 'instant' });
+    },
+    pattern,
+    top,
+  );
+  await sleep(900);
+};
+
 console.log('opening', URL);
 await page.goto(URL, { waitUntil: 'networkidle2', timeout: 60000 });
 await sleep(1500);
@@ -113,11 +134,13 @@ await sleep(500);
 await save('step-1-question-box.jpg');
 
 // 2 - the particulars for the official record, on the same screen
-await scrollTo('Details for the official record');
+await clickText('Fill in', true);
+await sleep(600);
+await scrollCardTo('Details for the official record', 12);
 await save('step-1b-official-record.jpg');
 
 // 3 - the app's own four-step guide, further down the first screen
-await scrollTo('How it works', -60);
+await scrollCardTo('How this works', 12);
 await save('step-1c-how-it-works.jpg');
 
 // 4 - start the report
@@ -131,7 +154,7 @@ await sleep(16000);
 await save('step-2-results-and-details.jpg');
 
 // 6 - the complainant's own details
-await scrollTo('Your details', -60);
+await scrollTo('Your details', 60);
 await save('step-2b-your-details.jpg');
 
 // 7 - the panel that only asks for what the form requires
@@ -178,7 +201,7 @@ if (process.env.SKIP_AGENT === '1') {
     await save('step-6-filled-badge.jpg');
 
     // the case file, and the evidence the reporter attaches
-    await scrollTo('Your proof');
+    await scrollTo('Your proof', 60);
     await save('step-7-evidence.jpg');
   }
 }

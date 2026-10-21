@@ -53,7 +53,7 @@ You're scared and do not know where to go for help and nobody seems to have just
 | 5 | **Read** - the agent opens the real page and reads the form it actually has today | **TinyFish Web Agent** |
 | 6 | **Review** - the victim sees every value that will be typed, with sensitive fields masked | Victim |
 | 7 | **File** - the agent types the approved values, stops, and submits only on a second explicit approval | **TinyFish Web Agent** |
-| 8 | **Prove** - every page read, reference number and submission goes into a SHA-256 hash chain, exportable as a case-file PDF | ReclaimYourNet |
+| 8 | **Prove** - every page read, reference number and submission goes into a SHA-256 hash chain, and the case file it exports is a printable record a police station will accept: the complainant's particulars, when and where it happened, the account responsible, the reporter's own annexures, and a declaration to sign | ReclaimYourNet |
 | 9 | **Follow up** - monitors re-check the reported URL and tell you whether the content actually came down | **TinyFish Monitor** |
 
 **The design principle: nothing about the world is hard-coded.** The channel
@@ -344,25 +344,31 @@ packages/core/                the triage engine (no network, no dependencies)
   src/ml/entities.ts          amount / platform / URL / phone / date extraction
   src/triage.ts               triage + urgency + hard-signal rules
   src/planner.ts              labels -> prioritised channels, deadlines, gaps
+  src/casefile.ts             the case file: particulars, statement, filing rows
+  src/evidence.ts             what an uploaded file actually is
   src/taxonomy.ts             incident types, platforms, authorities, protections
   scripts/eval-classifier.ts  the evaluation table in this README
 apps/api/                     Fastify API
   src/tinyfish/client.ts      Search / Fetch / Agent(SSE) / Monitor / Wallet
   src/pipeline/orchestrator.ts  discover -> analyse -> file -> monitor
-  src/casereport/pdf.ts       the case-file PDF
+  src/casereport/pdf.ts       the printable case file (PDFKit)
+  src/casereport/uploads.ts   the reporter's own files, hashed
   src/routes.ts               /api/action - one streamed route for every action
   demo-portals/               clones of the real forms, for practice mode
 apps/web/                     React + Vite + Tailwind client
-  src/components/Intake.tsx       the question box
+  src/components/Intake.tsx       the question box + the particulars for the record
   src/components/HowItWorks.tsx   the four-step guide
   src/components/YourDetails.tsx   editable name / email / mobile / city
+  src/components/CaseDetails.tsx  the particulars for the official record
   src/components/MissingFields.tsx the collapsible "only what is required" panel
   src/components/CoverageMap.tsx  the places to report, ranked
   src/components/AgentTheatre.tsx the live browser + timeline + log
   src/components/EvidenceVault.tsx the hash chain + the case file + monitors
+  src/components/EvidenceUpload.tsx attaching your own screenshots and videos
   src/components/Privacy.tsx      where your report actually goes
 api/[...path].ts              Vercel serverless entry
 scripts/build_pptx.py          builds the submission .pptx from docs/PPT.md
+scripts/capture.mjs            re-takes the README screenshots from the live app
 docs/PPT.md                   the judge-facing pitch deck
 docs/PLAN.md                  what was built, and why
 docs/DEMO.md                  the timed demo script
