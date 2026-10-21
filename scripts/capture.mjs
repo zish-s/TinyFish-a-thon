@@ -5,6 +5,10 @@
  *
  * Drives the deployed app with a real browser, walks the flow, and saves one
  * small JPEG per step into docs/. Run it again whenever the UI changes.
+ *
+ * The browser renders the full desktop layout but at a reduced device scale,
+ * so every screenshot comes out around 780px wide and under 30 KB - small
+ * enough for the README to carry the whole flow.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,6 +19,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, '..', 'docs');
 const URL = process.env.APP_URL ?? 'https://reclaim-your-net.vercel.app';
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+/** The layout width the app is rendered at. */
+const LAYOUT = 1280;
+/** The scale the screenshot is taken at - 1280 * 0.61 = 781px wide. */
+const SCALE = 0.61;
+/** The JPEG quality. */
+const QUALITY = 55;
 
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -24,130 +34,152 @@ const browser = await puppeteer.launch({
   executablePath: CHROME,
   headless: 'new',
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--hide-scrollbars'],
-  defaultViewport: { width: 1280, height: 860, deviceScaleFactor: 1 },
+  defaultViewport: { width: LAYOUT, height: 860, deviceScaleFactor: SCALE },
+  protocolTimeout: 60000,
 });
 
 const page = await browser.newPage();
-const shot = async (name) => {
+
+/** Saves the screen as a small JPEG. */
+const save = async (name) => {
+  const shot = await page.screenshot({
+    type: 'jpeg',
+    quality: QUALITY,
+    animations: 'disabled',
+    caret: 'hide',
+  });
   const file = path.join(OUT, name);
-  await page.screenshot({ path: file, type: 'jpeg', quality: 80 });
+  fs.writeFileSync(file, Buffer.from(shot));
   const kb = Math.round(fs.statSync(file).size / 1024);
   console.log(`  ${name}  ${kb} KB`);
 };
 
+/**
+ * Clicks a button by its text.
+ *
+ * The click is dispatched in the page rather than through the mouse: the app
+ * animates and re-renders, and puppeteer's "wait until the element stops
+ * moving" check never settles on a live screen.
+ */
 const clickText = async (text, exact = true) => {
-  const handle = await page.evaluateHandle(
+  const clicked = await page.evaluate(
     (t, ex) => {
       const btns = Array.from(document.querySelectorAll('button'));
-      return btns.find((b) => (ex ? b.textContent.trim() === t : b.textContent.includes(t))) ?? null;
+      const b = btns.find((x) => (ex ? x.textContent.trim() === t : x.textContent.includes(t)));
+      if (!b) return false;
+      b.scrollIntoView({ block: 'center' });
+      b.click();
+      return true;
     },
     text,
     exact,
   );
-  const el = handle.asElement();
-  if (!el) {
-    console.log(`  !! button not found: ${text}`);
-    return false;
-  }
-  await el.click();
-  return true;
+  if (!clicked) console.log(`  !! button not found: ${text}`);
+  return clicked;
+};
+
+/**
+ * Scrolls the heading into view.
+ *
+ * `offset` is where the heading should end up in the viewport: a positive
+ * number puts it that many pixels below the top, clear of the sticky header.
+ */
+const scrollTo = async (pattern, offset = 60) => {
+  await page.evaluate(
+    (p, off) => {
+      // The app scrolls smoothly, and Chrome will not commit a frame while a
+      // scroll is still running. Scroll instantly instead.
+      document.documentElement.style.scrollBehavior = 'auto';
+      const all = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
+      const h = all.find((x) => new RegExp(p, 'i').test(x.textContent));
+      if (h) {
+        const top = h.getBoundingClientRect().top + window.scrollY - off;
+        window.scrollTo({ top, behavior: 'instant' });
+      }
+    },
+    pattern,
+    offset,
+  );
+  await sleep(900);
 };
 
 console.log('opening', URL);
 await page.goto(URL, { waitUntil: 'networkidle2', timeout: 60000 });
-await sleep(1200);
+await sleep(1500);
 
 // 1 - the question box, with the example filled in
 await clickText('Impersonation + fraud');
-await sleep(400);
-await shot('step-1-question-box.jpg');
+await sleep(500);
+await save('step-1-question-box.jpg');
 
-// 2 - start the report
+// 2 - the particulars for the official record, on the same screen
+await scrollTo('Details for the official record');
+await save('step-1b-official-record.jpg');
+
+// 3 - the app's own four-step guide, further down the first screen
+await scrollTo('How it works', -60);
+await save('step-1c-how-it-works.jpg');
+
+// 4 - start the report
+await page.evaluate(() => window.scrollTo(0, 0));
+await sleep(300);
 await clickText('Find where to report this', false);
 console.log('  running discovery...');
-await sleep(14000);
+await sleep(16000);
 
-// 3 - the top of the results: urgency, practice mode, your details
-await shot('step-2-results-and-details.jpg');
+// 5 - the top of the results: urgency, practice mode, your details
+await save('step-2-results-and-details.jpg');
 
-// 3b - the panel that only asks for what the form requires
-await page.evaluate(() => {
-  const h = Array.from(document.querySelectorAll('h3')).find((x) => /the form needs from you|Only the fields/i.test(x.textContent));
-  if (h) h.scrollIntoView({ block: 'center' });
-});
-await sleep(700);
-await shot('step-3-required-fields.jpg');
+// 6 - the complainant's own details
+await scrollTo('Your details', -60);
+await save('step-2b-your-details.jpg');
 
-// 4 - the coverage map
-const mapShot = async () => {
-  await page.evaluate(() => {
-    const h = Array.from(document.querySelectorAll('h2')).find((x) => /Remove it from the platform/.test(x.textContent));
-    if (h) h.scrollIntoView({ block: 'start' });
-    window.scrollBy(0, -90);
-  });
-  await sleep(700);
-};
-await mapShot();
-await shot('step-4-coverage-map.jpg');
+// 7 - the panel that only asks for what the form requires
+await scrollTo('the form needs from you|Only the fields');
+await save('step-3-required-fields.jpg');
 
-// 5 - an expanded channel, showing the values the agent will type
+// 8 - the coverage map
+await scrollTo('Remove it from the platform');
+await save('step-4-coverage-map.jpg');
+
+// 9 - an expanded channel, showing the values the agent will type
 await clickText('Details', false);
-await sleep(700);
+await sleep(800);
 await page.evaluate(() => {
   const c = document.querySelector('a[href*="demo-portals/cybercrime"], a[href*="cybercrime.gov.in"]');
   if (c) c.scrollIntoView({ block: 'center' });
 });
 await sleep(500);
-await shot('step-5-channel-values.jpg');
+await save('step-5-channel-values.jpg');
 
-// 6 - the agent working, with the live browser
-console.log('  running the agent (this takes a minute)...');
-const readBtn = await page.evaluateHandle(() => {
-  const rows = Array.from(document.querySelectorAll('button'));
-  return rows.find((b) => b.textContent.trim() === 'Read the form') ?? null;
-});
-if (readBtn.asElement()) {
-  await readBtn.asElement().click();
-  await sleep(70000);
-  await page.evaluate(() => {
-    const h = Array.from(document.querySelectorAll('h2')).find((x) => /What the agent did/.test(x.textContent));
-    if (h) h.scrollIntoView({ block: 'start' });
-    window.scrollBy(0, -90);
-  });
-  await sleep(800);
-  await shot('step-5-agent-working.jpg');
+// 10 - the agent working, with the live browser
+if (process.env.SKIP_AGENT === '1') {
+  console.log('  SKIP_AGENT=1 - stopping before the agent run');
+} else {
+  console.log('  running the agent (this takes a minute)...');
+  await clickText('Read the form', true);
+  await sleep(75000);
+  await scrollTo('What the agent did');
+  await save('step-5-agent-working.jpg');
 
-  // 7 - the evidence vault
   console.log('  filing...');
-  const fillBtn = await page.evaluateHandle(() => {
-    const rows = Array.from(document.querySelectorAll('button'));
-    return rows.find((b) => b.textContent.trim() === 'Fill & submit') ?? null;
-  });
-  if (fillBtn.asElement()) {
-    await fillBtn.asElement().click();
-    await sleep(95000);
+  const filed = await clickText('Fill & submit', true);
+  if (filed) {
+    await sleep(100000);
 
     // the "filled 3 of 3" badge, on the expanded channel
-    await page.evaluate(() => {
-      const b = Array.from(document.querySelectorAll('button')).find((x) => x.textContent.trim() === 'Details');
-      if (b) b.click();
-    });
-    await sleep(800);
+    await clickText('Details', true);
+    await sleep(900);
     await page.evaluate(() => {
       const badge = Array.from(document.querySelectorAll('div')).find((x) => /Filled \d+ of \d+/.test(x.textContent));
       if (badge) badge.scrollIntoView({ block: 'center' });
     });
-    await sleep(600);
-    await shot('step-6-filled-badge.jpg');
+    await sleep(700);
+    await save('step-6-filled-badge.jpg');
 
-    // 7 - the evidence vault
-    await page.evaluate(() => {
-      const h = Array.from(document.querySelectorAll('h2')).find((x) => /Your proof/.test(x.textContent));
-      if (h) h.scrollIntoView({ block: 'start' });
-      window.scrollBy(0, -90);
-    });
-    await sleep(800);
-    await shot('step-7-evidence.jpg');
+    // the case file, and the evidence the reporter attaches
+    await scrollTo('Your proof');
+    await save('step-7-evidence.jpg');
   }
 }
 

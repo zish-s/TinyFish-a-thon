@@ -13,6 +13,7 @@ import {
   type Channel,
   type EvidenceItem,
   type IncidentDetails,
+  type MonitorBinding,
   type ReporterProfile,
   type UploadedEvidence,
 } from '@reclaim/core';
@@ -743,28 +744,21 @@ export async function armMonitors(
         purpose: `The reported content on ${channel.name} was taken down, removed, or the page now shows a takedown notice.`,
       });
       const monitor = created.monitor;
-      insertMonitor(caseId, {
+      const binding = {
         id: monitor.id,
         channelId: channel.id,
         channelName: channel.name,
-        type: 'page',
+        type: 'page' as const,
         target,
         purpose: 'Content removed or takedown notice appears',
         status: monitor.status,
         createdAt: new Date().toISOString(),
-      });
+      };
+      insertMonitor(caseId, binding);
+      rememberMonitor(caseFile, binding);
       bus.publish(caseId, {
         type: 'monitor',
-        monitor: {
-          id: monitor.id,
-          channelId: channel.id,
-          channelName: channel.name,
-          type: 'page',
-          target,
-          purpose: 'Content removed or takedown notice appears',
-          status: monitor.status,
-          createdAt: new Date().toISOString(),
-        },
+        monitor: binding,
       });
       log(caseId, 'success', `Monitor armed on ${channel.name} (every 6 hours)`);
     } catch (err) {
@@ -785,16 +779,18 @@ export async function armMonitors(
         purpose: `A new page or post impersonating ${handle} on ${platform} appears.`,
       });
       const monitor = created.monitor;
-      insertMonitor(caseId, {
+      const binding = {
         id: monitor.id,
         channelId: 'clone_watch',
         channelName: `Clone watch (${platform})`,
-        type: 'topic',
+        type: 'topic' as const,
         target: `"${handle}" ${platform}`,
         purpose: `A new impersonation of ${handle} appears`,
         status: monitor.status,
         createdAt: new Date().toISOString(),
-      });
+      };
+      insertMonitor(caseId, binding);
+      rememberMonitor(caseFile, binding);
       log(caseId, 'success', `Clone watch armed for @${handle}`);
     } catch (err) {
       log(caseId, 'warn', `Could not arm the clone watch: ${(err as Error).message}`);
@@ -806,8 +802,19 @@ export async function armMonitors(
   return saveAndPublish(caseId);
 }
 
-export function monitorsFor(caseId: string) {
-  return listMonitors(caseId);
+export function monitorsFor(caseId: string, provided?: CaseFile) {
+  const merged = new Map<string, MonitorBinding>();
+  for (const m of listMonitors(caseId)) merged.set(m.id, m);
+  // The case file carries its own monitors, so they survive a serverless
+  // platform handing the next request to a different instance.
+  for (const m of provided?.monitors ?? []) merged.set(m.id, m);
+  return [...merged.values()];
+}
+
+/** Keeps the monitor on the case file itself, not only in the server store. */
+function rememberMonitor(caseFile: CaseFile, m: MonitorBinding) {
+  const list = caseFile.monitors ?? [];
+  caseFile.monitors = [...list.filter((x) => x.id !== m.id), m];
 }
 
 /** The case a request is working on, from the store or from the client. */

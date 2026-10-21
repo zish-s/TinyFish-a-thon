@@ -315,6 +315,12 @@ export interface CaseFile {
   details?: IncidentDetails;
   /** Files the reporter attached to the case themselves. */
   uploads?: UploadedEvidence[];
+  /**
+   * The monitors we armed for this case. They travel with the case file so
+   * the case-file PDF and the follow-up panel still know about them on a
+   * serverless platform, where the next request may land on another instance.
+   */
+  monitors?: MonitorBinding[];
   /** True when the agents should drive the bundled demo portals. */
   sandbox?: boolean;
 }

@@ -177,7 +177,7 @@ export async function registerRoutes(app: FastifyInstance) {
       reply.code(404);
       return { error: 'case not found' };
     }
-    return { caseFile, monitors: orch.monitorsFor(id) };
+    return { caseFile, monitors: orch.monitorsFor(id, caseFile) };
   });
 
   /* ------------------------------------------------------------- stream */
@@ -298,7 +298,7 @@ export async function registerRoutes(app: FastifyInstance) {
       reply.code(404);
       return reply.send({ error: 'case not found' });
     }
-    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(id));
+    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(id, caseFile));
     reply.header('Content-Type', 'application/pdf');
     reply.header('Content-Disposition', `attachment; filename="ReclaimYourNet-case-${id.slice(0, 8)}.pdf"`);
     return reply.send(pdf);
@@ -696,7 +696,7 @@ export async function registerRoutes(app: FastifyInstance) {
       reply.code(404);
       return reply.send({ error: 'case not found' });
     }
-    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(caseFile.id));
+    const pdf = await renderCaseFile(caseFile, orch.monitorsFor(caseFile.id, caseFile));
     reply.header('Content-Type', 'application/pdf');
     reply.header(
       'Content-Disposition',
