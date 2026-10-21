@@ -64,10 +64,12 @@ const save = async (name) => {
 const clickText = async (text, exact = true) => {
   const clicked = await page.evaluate(
     (t, ex) => {
+      // The app scrolls smoothly, and an animation still running when the
+      // next scroll starts would override it. Turn it off and click in place.
+      document.documentElement.style.scrollBehavior = 'auto';
       const btns = Array.from(document.querySelectorAll('button'));
       const b = btns.find((x) => (ex ? x.textContent.trim() === t : x.textContent.includes(t)));
       if (!b) return false;
-      b.scrollIntoView({ block: 'center' });
       b.click();
       return true;
     },
@@ -90,6 +92,9 @@ const scrollTo = async (pattern, offset = 60) => {
       // The app scrolls smoothly, and Chrome will not commit a frame while a
       // scroll is still running. Scroll instantly instead.
       document.documentElement.style.scrollBehavior = 'auto';
+      // The sticky header reserves scroll padding, which would push every
+      // shot down by the height of the header.
+      document.documentElement.style.scrollPaddingTop = '0px';
       const all = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
       const h = all.find((x) => new RegExp(p, 'i').test(x.textContent));
       if (h) {
@@ -114,6 +119,9 @@ const scrollCardTo = async (pattern, top = 16) => {
   await page.evaluate(
     (p, t) => {
       document.documentElement.style.scrollBehavior = 'auto';
+      // The sticky header reserves scroll padding, which would push every
+      // shot down by the height of the header.
+      document.documentElement.style.scrollPaddingTop = '0px';
       const all = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
       const h = all.find((x) => new RegExp(p, 'i').test(x.textContent));
       if (!h) return;
