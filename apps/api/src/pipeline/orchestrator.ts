@@ -3,14 +3,18 @@ import {
   buildDraft,
   buildNarrative,
   buildPlan,
+  deriveDetails,
   discoveryQueryFor as coreDiscoveryQueryFor,
   knownDomainsFor,
+  mergeDetails,
   triage,
   type AgentStep,
   type CaseFile,
   type Channel,
   type EvidenceItem,
+  type IncidentDetails,
   type ReporterProfile,
+  type UploadedEvidence,
 } from '@reclaim/core';
 import { config, hasPublicTunnel } from '../env.js';
 import { bus, log, setStatus } from '../bus.js';
@@ -197,7 +201,11 @@ export function createCase(
   keep: boolean,
 ): CaseFile {
   const triaged = triage(text);
-  const plan = buildPlan(triaged, profile, country);
+  // What the person already told us in the story: the handle, the platform,
+  // the date, the place, the amount. The case file starts from that, and the
+  // person corrects it afterwards.
+  const details = deriveDetails(triaged, profile);
+  const plan = buildPlan(triaged, profile, country, details);
   const now = new Date().toISOString();
   const id = randomUUID();
 
@@ -212,6 +220,7 @@ export function createCase(
     status: 'triaged',
     country,
     profile,
+    details,
   };
 
   insertCase(caseFile, keep);
@@ -429,7 +438,9 @@ export async function analyseChannel(
       // The agent may rename fields (it returns the visible label, not the
       // html name), so the draft is rebuilt against the fields the live page
       // actually has.
-      channel.draft = buildDraft(live, caseFile.incident, caseFile.profile, channel.narrative ?? '');
+      const narrative =
+        channel.narrative ?? buildNarrative(caseFile.incident, caseFile.profile, caseFile.details);
+      channel.draft = buildDraft(live, caseFile.incident, caseFile.profile, narrative, caseFile.details);
       channel.requiredEvidence = spec.evidence_requests?.length ? spec.evidence_requests : channel.requiredEvidence;
       channel.status = 'analysed';
       channel.url = spec.form_url || channel.url;
@@ -665,6 +676,7 @@ export async function fileChannel(
     if (result?.submitted) {
       channel.status = 'submitted';
       channel.reference = result.reference ?? undefined;
+      channel.filedAt = new Date().toISOString();
       channel.error = undefined;
       log(caseId, 'success', `${channel.name}: submitted${result.reference ? ` - reference ${result.reference}` : ''}`);
       addEvidence(caseId, {
@@ -824,14 +836,7 @@ export function skipChannel(caseId: string, channelId: string, provided?: CaseFi
 export function updateDetails(caseId: string, profile: ReporterProfile, provided?: CaseFile): CaseFile {
   const caseFile = resolveCase(caseId, provided);
   caseFile.profile = { ...caseFile.profile, ...profile };
-  const narrative = buildNarrative(caseFile.incident, caseFile.profile);
-  for (const channel of caseFile.plan.channels) {
-    channel.draft = {
-      ...buildDraft(channel.requiredFields, caseFile.incident, caseFile.profile, narrative),
-      ...(channel.overrides ?? {}),
-    };
-    channel.narrative = narrative;
-  }
+  rebuildDrafts(caseFile);
   saveAndPublish(caseId);
   return getCase(caseId)!;
 }
@@ -850,4 +855,86 @@ export function updateChannelFields(
   channel.overrides = { ...(channel.overrides ?? {}), ...values };
   saveAndPublish(caseId);
   return channel;
+}
+
+/**
+ * The particulars of the incident were corrected or filled in.
+ *
+ * These are the fields a police station asks for first - when it happened,
+ * where, which account, how much - so every draft is rebuilt against them.
+ * Anything the person typed by hand is kept.
+ */
+export function updateIncidentDetails(
+  caseId: string,
+  details: IncidentDetails,
+  provided?: CaseFile,
+): CaseFile {
+  const caseFile = resolveCase(caseId, provided);
+  caseFile.details = mergeDetails(caseFile.details, details);
+  rebuildDrafts(caseFile);
+  saveAndPublish(caseId);
+  return caseFile;
+}
+
+/**
+ * A file the reporter attached to the case themselves - a screenshot, a
+ * video, a receipt. It joins the case and the hash chain, so the copy that
+ * goes to an authority can be shown to be the copy that was given here.
+ */
+export function attachUpload(caseId: string, upload: UploadedEvidence, provided?: CaseFile): CaseFile {
+  const caseFile = resolveCase(caseId, provided);
+  caseFile.uploads = [...(caseFile.uploads ?? []), upload];
+  addEvidence(caseId, {
+    label: `Complainant's evidence - ${upload.name}`,
+    kind: 'upload',
+    url: upload.url,
+    content: [
+      upload.description || 'Evidence furnished by the complainant',
+      `File: ${upload.name} (${upload.type || 'file'}, ${upload.size} bytes)`,
+      `SHA-256: ${upload.hash}`,
+      upload.capturedAt ? `Captured: ${upload.capturedAt}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  });
+  saveAndPublish(caseId);
+  return caseFile;
+}
+
+/**
+ * A file is withdrawn. The chain keeps the record - removing an entry would
+ * break every hash after it - but the file stops being an annexure.
+ */
+export function withdrawUpload(caseId: string, uploadId: string, provided?: CaseFile): CaseFile {
+  const caseFile = resolveCase(caseId, provided);
+  const uploads = caseFile.uploads ?? [];
+  const upload = uploads.find((u) => u.id === uploadId);
+  if (!upload) throw new Error('Unknown evidence file');
+  upload.withdrawn = true;
+  caseFile.uploads = uploads;
+  addEvidence(caseId, {
+    label: `Evidence withdrawn by the complainant - ${upload.name}`,
+    kind: 'note',
+    content: `The complainant withdrew this file from the annexures. SHA-256: ${upload.hash}`,
+  });
+  saveAndPublish(caseId);
+  return caseFile;
+}
+
+/** Rebuilds every form draft from the incident, the profile and the particulars. */
+function rebuildDrafts(caseFile: CaseFile) {
+  const narrative = buildNarrative(caseFile.incident, caseFile.profile, caseFile.details);
+  for (const channel of caseFile.plan.channels) {
+    channel.draft = {
+      ...buildDraft(
+        channel.requiredFields,
+        caseFile.incident,
+        caseFile.profile,
+        narrative,
+        caseFile.details,
+      ),
+      ...(channel.overrides ?? {}),
+    };
+    channel.narrative = narrative;
+  }
 }

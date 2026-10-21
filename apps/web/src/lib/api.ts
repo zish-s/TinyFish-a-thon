@@ -1,6 +1,14 @@
-import type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding } from '@reclaim/core';
+import type {
+  AgentStep,
+  CaseFile,
+  Channel,
+  EvidenceItem,
+  IncidentDetails,
+  MonitorBinding,
+  UploadedEvidence,
+} from '@reclaim/core';
 
-export type { AgentStep, CaseFile, Channel, EvidenceItem, MonitorBinding };
+export type { AgentStep, CaseFile, Channel, EvidenceItem, IncidentDetails, MonitorBinding, UploadedEvidence };
 
 export type LogLine = {
   type: 'log';
@@ -25,6 +33,9 @@ export interface Profile {
   phone?: string;
   address?: string;
   city?: string;
+  state?: string;
+  idType?: string;
+  idNumber?: string;
 }
 const json = async <T,>(res: Response): Promise<T> => {
   if (!res.ok) {
@@ -89,11 +100,11 @@ async function runAndCollect(body: Record<string, unknown>): Promise<CaseFile> {
 }
 
 export const api = {
-  createCase: (text: string, profile: Profile, country: string) =>
+  createCase: (text: string, profile: Profile, country: string, details?: IncidentDetails) =>
     fetch('/api/cases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, profile, country }),
+      body: JSON.stringify({ text, profile, country, details }),
     }).then((r) => json<CaseFile>(r)),
 
   deleteCase: (id: string) =>
@@ -129,6 +140,36 @@ export const api = {
 
   updateDetails: (id: string, profile: Profile, current: CaseFile) =>
     runAndCollect({ action: 'details', id, profile, case: current }),
+
+  /** The particulars of the incident: when, where, which account, how much. */
+  updateIncidentDetails: (id: string, details: IncidentDetails, current: CaseFile) =>
+    runAndCollect({ action: 'details', id, details, case: current }),
+
+  /** Attaches a file the person chose: a screenshot, a video, a receipt. */
+  uploadEvidence: async (
+    id: string,
+    file: File,
+    description: string,
+    capturedAt: string,
+    current: CaseFile,
+  ): Promise<CaseFile> => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('description', description);
+    form.append('capturedAt', capturedAt);
+    form.append('case', JSON.stringify(current));
+    const res = await fetch(`/api/cases/${encodeURIComponent(id)}/evidence`, {
+      method: 'POST',
+      body: form,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body?.error ?? `Could not attach the file (${res.status})`);
+    return body.caseFile as CaseFile;
+  },
+
+  /** Withdraws a file from the annexures. */
+  withdrawEvidence: (id: string, uploadId: string, current: CaseFile) =>
+    runAndCollect({ action: 'withdraw', id, uploadId, case: current }),
 
   updateFields: (id: string, channelId: string, values: Record<string, string>, current: CaseFile) =>
     runAndCollect({ action: 'fields', id, channelId, values, case: current }),

@@ -5,6 +5,14 @@ import { redact } from '../src/ml/redact.js';
 import { extractEntities } from '../src/ml/entities.js';
 import { buildPlan, buildNarrative } from '../src/planner.js';
 import { triage } from '../src/triage.js';
+import {
+  caseReference,
+  deriveDetails,
+  filingRows,
+  missingParticulars,
+  statementText,
+} from '../src/casefile.js';
+import type { CaseFile } from '../src/types.js';
 
 const model = new IncidentClassifier(TRAINING_DATA);
 
@@ -81,5 +89,74 @@ describe('triage + plan', () => {
     const t = triage('I lost 5000 rupees to a fake investment scheme');
     const n = buildNarrative(t, { name: 'Ravi' });
     expect(n).toContain('5000');
+  });
+});
+
+describe('the printable case file', () => {
+  const incident = triage(
+    'A fake Instagram account at https://instagram.com/rahul.finance.2024 is asking my friends to send me 500 rupees. It happened on 12/10/2026 at my flat in Pune.',
+  );
+
+  function aCase(overrides: Partial<CaseFile> = {}): CaseFile {
+    const plan = buildPlan(incident, { name: 'Ishita Sharma', phone: '+91 98765 43210', city: 'Pune' }, 'IN');
+    return {
+      id: '11111111-2222-3333-4444-555555555555',
+      createdAt: '2026-10-21T10:00:00.000Z',
+      updatedAt: '2026-10-21T10:00:00.000Z',
+      title: 'impersonation - instagram',
+      incident,
+      plan,
+      evidence: [],
+      status: 'triaged',
+      country: 'IN',
+      profile: { name: 'Ishita Sharma', phone: '+91 98765 43210', city: 'Pune' },
+      ...overrides,
+    };
+  }
+
+  it('pulls the handle, the platform and the amount out of the story', () => {
+    const details = deriveDetails(incident, {});
+    expect(details.suspect?.handles).toContain('rahul.finance.2024');
+    expect(details.suspect?.platform).toBe('Instagram');
+    expect(details.suspect?.urls?.[0]).toContain('instagram.com');
+    expect(details.amount).toBe('500');
+  });
+
+  it('numbers the file the way an office would', () => {
+    expect(caseReference(aCase())).toBe('RYN-2026-11111111');
+  });
+
+  it('writes a statement with the date, the place, the account and the amount', () => {
+    const caseFile = aCase({
+      details: {
+        date: '2026-10-12',
+        time: '21:40',
+        place: 'Flat 402, Pune',
+        mode: 'online',
+        amount: '500',
+        description: 'A fake account asked my friends for money.',
+        suspect: { handles: ['rahul.finance.2024'], platform: 'Instagram' },
+      },
+    });
+    const statement = statementText(caseFile);
+    expect(statement).toContain('Ishita Sharma');
+    expect(statement).toContain('12 October 2026');
+    expect(statement).toContain('Flat 402, Pune');
+    expect(statement).toContain('rahul.finance.2024');
+    expect(statement).toContain('500');
+  });
+
+  it('lists every place the complaint has to be filed', () => {
+    const caseFile = aCase();
+    const rows = filingRows(caseFile);
+    expect(rows.length).toBe(caseFile.plan.channels.length);
+    expect(rows.every((r) => Boolean(r.name))).toBe(true);
+  });
+
+  it('says which particulars are still missing', () => {
+    const missing = missingParticulars({}, { name: 'Ishita Sharma' });
+    expect(missing).toContain('the date of the incident');
+    expect(missing).toContain('the place where it happened');
+    expect(missing).toContain('the account or handle used');
   });
 });

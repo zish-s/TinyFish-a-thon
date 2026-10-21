@@ -3,6 +3,7 @@ import type {
   ChannelField,
   CoverageGap,
   CoveragePlan,
+  IncidentDetails,
   IncidentLabel,
   TriageResult,
 } from './types.js';
@@ -63,18 +64,29 @@ function findEntity(triage: TriageResult, type: string): string | undefined {
   return triage.entities.find((e) => e.type === type)?.value;
 }
 
-export function buildNarrative(triage: TriageResult, profile: ReporterProfile): string {
+export function buildNarrative(
+  triage: TriageResult,
+  profile: ReporterProfile,
+  details?: IncidentDetails,
+): string {
   const parts: string[] = [];
-  const platform = findEntity(triage, 'platform');
-  const target = findEntity(triage, 'url') ?? findEntity(triage, 'handle');
-  const amount = findEntity(triage, 'amount');
-  const date = findEntity(triage, 'date');
-  const location = findEntity(triage, 'location');
+  const platform =
+    details?.suspect?.platform ?? findEntity(triage, 'platform');
+  const target =
+    details?.suspect?.urls?.[0] ??
+    details?.suspect?.handles?.[0] ??
+    findEntity(triage, 'url') ??
+    findEntity(triage, 'handle');
+  const amount = details?.amount ?? findEntity(triage, 'amount');
+  const date = details?.date ?? findEntity(triage, 'date');
+  const location = details?.place ?? findEntity(triage, 'location');
 
   parts.push(
-    `On ${date ?? 'the date of this complaint'}, I discovered${platform ? ` on ${platform}` : ''} that ${
-      target ? `the account/post at ${target}` : 'an account or post'
-    } is ${labelName(triage.primaryLabel).toLowerCase()}.`,
+    `On ${date ?? 'the date of this complaint'}${location ? `, at ${location}` : ''}, I discovered${
+      platform ? ` on ${platform}` : ''
+    } that ${target ? `the account/post at ${target}` : 'an account or post'} is ${labelName(
+      triage.primaryLabel,
+    ).toLowerCase()}.`,
   );
 
   const secondary = triage.labels
@@ -115,6 +127,7 @@ function valueForField(
   triage: TriageResult,
   profile: ReporterProfile,
   narrative: string,
+  details?: IncidentDetails,
 ): string {
   // Match on the visible label first - that is what a human (and the web
   // agent) actually sees - and fall back to the field name.
@@ -152,7 +165,13 @@ function valueForField(
 
   switch (true) {
     case /username|profile link|profile url|post \/ profile|post url|link|target|account|url/.test(lower):
-      return findEntity(triage, 'url') ?? findEntity(triage, 'handle') ?? '';
+      return (
+        details?.suspect?.urls?.[0] ??
+        details?.suspect?.handles?.[0] ??
+        findEntity(triage, 'url') ??
+        findEntity(triage, 'handle') ??
+        ''
+      );
     case /email/.test(lower):
       return profile.email ?? '';
     case /mobile|phone|callback/.test(lower):
@@ -161,10 +180,14 @@ function valueForField(
       return profile.address ?? profile.city ?? '';
     case /city/.test(lower):
       return profile.city ?? '';
-    case /amount|how much|lost/.test(lower):
-      return findEntity(triage, 'amount') ?? '';
+    case /place|location|where/.test(lower):
+      return details?.place ?? profile.city ?? '';
+    case /amount|how much|lost|money/.test(lower):
+      return details?.amount ?? findEntity(triage, 'amount') ?? '';
     case /date/.test(lower) && !/birth/.test(lower):
-      return findEntity(triage, 'date') ?? new Date().toISOString().slice(0, 10);
+      return details?.date ?? findEntity(triage, 'date') ?? new Date().toISOString().slice(0, 10);
+    case /time/.test(lower) && !/birth/.test(lower):
+      return details?.time ?? '';
     case /description|details|narrative|complaint|what happened|stories/.test(lower):
       return narrative;
     case /transaction|utr/.test(lower):
@@ -204,16 +227,22 @@ export function buildDraft(
   triage: TriageResult,
   profile: ReporterProfile,
   narrative: string,
+  details?: IncidentDetails,
 ): Record<string, string> {
   const draft: Record<string, string> = {};
   for (const field of fields) {
-    draft[field.name] = valueForField(field, triage, profile, narrative);
+    draft[field.name] = valueForField(field, triage, profile, narrative, details);
   }
   return draft;
 }
 
-export function buildPlan(triage: TriageResult, profile: ReporterProfile, country = 'IN'): CoveragePlan {
-  const narrative = buildNarrative(triage, profile);
+export function buildPlan(
+  triage: TriageResult,
+  profile: ReporterProfile,
+  country = 'IN',
+  details?: IncidentDetails,
+): CoveragePlan {
+  const narrative = buildNarrative(triage, profile, details);
   const activeLabels = triage.activeLabels?.length ? triage.activeLabels : [triage.primaryLabel];
 
   const channels: Channel[] = [];
@@ -395,7 +424,7 @@ export function buildPlan(triage: TriageResult, profile: ReporterProfile, countr
 
   // ---- drafts ------------------------------------------------------------
   for (const channel of channels) {
-    channel.draft = buildDraft(channel.requiredFields, triage, profile, narrative);
+    channel.draft = buildDraft(channel.requiredFields, triage, profile, narrative, details);
     channel.narrative = narrative;
   }
 

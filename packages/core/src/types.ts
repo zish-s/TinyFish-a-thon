@@ -158,6 +158,8 @@ export interface Channel {
   };
   /** Reference / ticket number returned after filing. */
   reference?: string;
+  /** When the complaint was actually filed on this channel. */
+  filedAt?: string;
   error?: string;
 }
 
@@ -180,7 +182,7 @@ export interface CoveragePlan {
 export interface EvidenceItem {
   id: string;
   label: string;
-  kind: 'page_snapshot' | 'screenshot' | 'extraction' | 'reference' | 'note';
+  kind: 'page_snapshot' | 'screenshot' | 'extraction' | 'reference' | 'note' | 'upload';
   url?: string;
   content?: string;
   capturedAt: string;
@@ -212,6 +214,87 @@ export interface ReporterProfile {
   phone?: string;
   address?: string;
   city?: string;
+  state?: string;
+  /** e.g. "Aadhaar", "PAN", "Driving licence". */
+  idType?: string;
+  /** The number on that document. */
+  idNumber?: string;
+}
+
+/**
+ * The person, or the account, the complaint is against.
+ *
+ * This is the part a police station actually asks for: the handle, the
+ * platform it sits on, the link, and anything else that identifies it.
+ */
+export interface SuspectDetails {
+  /** Usernames of the account(s) used, e.g. "rahul.finance.2024". */
+  handles?: string[];
+  /** The platform the account is on, e.g. "Instagram". */
+  platform?: string;
+  /** Profile or post links. */
+  urls?: string[];
+  /** Phone, email, UPI id, account number - anything else that identifies them. */
+  identifiers?: string;
+  /** Anything known about the person: age, gender, city, how they were seen. */
+  description?: string;
+}
+
+/**
+ * The particulars of the incident, as the reporter stated them.
+ *
+ * This is deliberately separate from the machine's own reading of the story:
+ * a police file needs what the person said, when and where it happened, and
+ * who was responsible - not a classifier's opinion.
+ */
+export interface IncidentDetails {
+  /** Date the incident happened (YYYY-MM-DD). */
+  date?: string;
+  /** Time the incident happened (HH:MM). */
+  time?: string;
+  /** Where it happened: an address, an area, or "online". */
+  place?: string;
+  /** How it happened. */
+  mode?: 'online' | 'offline' | 'both';
+  /** True when it is still going on. */
+  ongoing?: boolean;
+  /** Money involved, if any. */
+  amount?: string;
+  /** How many times, or how long it has been going on. */
+  frequency?: string;
+  /** The complainant's own account of what happened. */
+  description?: string;
+  /** The person or account responsible. */
+  suspect?: SuspectDetails;
+  /** Anything else the reporter wants on record. */
+  additional?: string;
+}
+
+/**
+ * A file the reporter supplied with the case: a screenshot, a video, a
+ * payment receipt, an exported chat. The bytes are hashed so the file that
+ * goes to a police station can be proven to be the file that was given here.
+ */
+export interface UploadedEvidence {
+  id: string;
+  /** The file name as it was on the reporter's device. */
+  name: string;
+  /** MIME type. */
+  type: string;
+  /** Size in bytes. */
+  size: number;
+  /** SHA-256 of the file bytes. */
+  hash: string;
+  /** What the reporter says this evidence shows. */
+  description: string;
+  /** When the reporter says it was captured. */
+  capturedAt?: string;
+  /** When it was uploaded. */
+  uploadedAt: string;
+  /** Where the bytes can be fetched from. */
+  url?: string;
+  /** Withdrawn by the reporter. Kept in the chain, left out of the annexures. */
+  withdrawn?: boolean;
 }
 
 export interface CaseFile {
@@ -226,6 +309,10 @@ export interface CaseFile {
   country: string;
   /** The details the reporter gave us, kept so drafts can be rebuilt. */
   profile: ReporterProfile;
+  /** What the reporter told us about when, where, who and how much. */
+  details?: IncidentDetails;
+  /** Files the reporter attached to the case themselves. */
+  uploads?: UploadedEvidence[];
   /** True when the agents should drive the bundled demo portals. */
   sandbox?: boolean;
 }

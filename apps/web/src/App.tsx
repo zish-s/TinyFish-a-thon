@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AgentStep, CaseFile } from '@reclaim/core';
+import type { AgentStep, CaseFile, IncidentDetails } from '@reclaim/core';
 import { api, type CaseEvent, type LogLine, type Profile } from './lib/api';
 import { Intake } from './components/Intake';
 import { CoverageMap } from './components/CoverageMap';
@@ -7,6 +7,7 @@ import { AgentTheatre } from './components/AgentTheatre';
 import { EvidenceVault } from './components/EvidenceVault';
 import { Pricing } from './components/Pricing';
 import { YourDetails } from './components/YourDetails';
+import { CaseDetails } from './components/CaseDetails';
 import { MissingFields } from './components/MissingFields';
 import { Dot, SectionTitle, Tag } from './components/ui';import { Net } from './components/Doodles';
 
@@ -55,7 +56,12 @@ export default function App() {
     }
   }, []);
 
-  const startCase = async (text: string, profile: Profile, country: string) => {
+  const startCase = async (
+    text: string,
+    profile: Profile,
+    country: string,
+    details?: IncidentDetails,
+  ) => {
     setBusy(true);
     setSubmitError(null);
     setLogs([]);
@@ -63,7 +69,7 @@ export default function App() {
     setMonitors([]);
     setMonitorsArmed(false);
     try {
-      const created = await api.createCase(text, profile, country);
+      const created = await api.createCase(text, profile, country, details);
       setCaseFile(created);
       await runAction((c) => api.discover(created.id, sandbox, c, handleEvent), created);
     } catch (err) {
@@ -255,6 +261,15 @@ export default function App() {
                 }}
               />
 
+              <CaseDetails
+                details={caseFile.details}
+                profile={caseFile.profile ?? {}}
+                onSave={async (details) => {
+                  const updated = await api.updateIncidentDetails(caseFile.id, details, caseFile);
+                  setCaseFile(updated);
+                }}
+              />
+
               <MissingFields
                 channels={caseFile.plan.channels}
                 profileFilled={Boolean(caseFile.profile?.name && caseFile.profile?.phone)}
@@ -312,14 +327,29 @@ export default function App() {
               />
               <EvidenceVault
                 evidence={caseFile.evidence}
+                uploads={caseFile.uploads}
                 monitors={monitors}
                 caseId={caseFile.id}
                 currentCase={caseFile}
-                armed={monitorsArmed}
+                onUpload={async (file, description, capturedAt) => {
+                  const updated = await api.uploadEvidence(
+                    caseFile.id,
+                    file,
+                    description,
+                    capturedAt,
+                    caseFile,
+                  );
+                  setCaseFile(updated);
+                }}
+                onWithdraw={async (uploadId) => {
+                  const updated = await api.withdrawEvidence(caseFile.id, uploadId, caseFile);
+                  setCaseFile(updated);
+                }}
                 onArm={async () => {
                   await api.armMonitors(caseFile.id, caseFile, handleEvent);
                   setMonitorsArmed(true);
                 }}
+                armed={monitorsArmed}
               />
             </section>
 

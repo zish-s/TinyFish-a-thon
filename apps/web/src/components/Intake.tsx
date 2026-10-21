@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { IncidentDetails } from '@reclaim/core';
 import type { Profile } from '../lib/api';
 import { ArrowCurve, Sparkles, Squiggle, Star, Underline } from './Doodles';
 import { HowItWorks } from './HowItWorks';
@@ -22,21 +23,56 @@ const EXAMPLES = [
   },
 ];
 
+const PLATFORMS = [
+  'Instagram',
+  'Facebook',
+  'X (Twitter)',
+  'WhatsApp',
+  'Telegram',
+  'YouTube',
+  'LinkedIn',
+  'TikTok',
+  'Reddit',
+  'Other / not sure',
+];
+
+const EMPTY_DETAILS: IncidentDetails = {
+  date: '',
+  time: '',
+  place: '',
+  mode: 'online',
+  amount: '',
+  frequency: '',
+  description: '',
+  additional: '',
+  suspect: { handles: [], platform: '', urls: [], identifiers: '', description: '' },
+};
+
+/** A fresh copy, so the form never edits the template in place. */
+function blankDetails(): IncidentDetails {
+  return {
+    ...EMPTY_DETAILS,
+    suspect: { ...EMPTY_DETAILS.suspect, handles: [], urls: [] },
+  };
+}
+
 export function Intake({
   onSubmit,
   busy,
   error,
 }: {
-  onSubmit: (text: string, profile: Profile, country: string) => void;
+  onSubmit: (text: string, profile: Profile, country: string, details: IncidentDetails) => void;
   busy: boolean;
   error: string | null;
 }) {
   const [text, setText] = useState('');
   const [profile, setProfile] = useState<Profile>({});
   const [country, setCountry] = useState('IN');
+  const [details, setDetails] = useState<IncidentDetails>(blankDetails);
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showRecord, setShowRecord] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -63,7 +99,7 @@ export function Intake({
     recognition.onerror = (event: any) => {
       setListening(false);
       const code = event?.error;
-      if (code === 'not-allowed' || code === 'service-not-allowed') {
+      if (code === 'not-allowed' || code === 'service-not-satisfied') {
         setVoiceError('Your browser blocked the microphone. Allow it in the address bar, or just type instead.');
       } else if (code === 'no-speech') {
         setVoiceError('We did not catch anything. Try again, or just type it.');
@@ -83,8 +119,19 @@ export function Intake({
 
   const submit = () => {
     if (text.trim().length < 8) return;
-    onSubmit(text.trim(), profile, country);
+    onSubmit(text.trim(), profile, country, details);
   };
+
+  const setSuspect = (patch: Partial<NonNullable<IncidentDetails['suspect']>>) =>
+    setDetails((d) => ({ ...d, suspect: { ...(d.suspect ?? {}), ...patch } }));
+
+  const handleText = (value: string) => setSuspect({ handles: value ? [value.replace(/^@/, '')] : [] });
+
+  const missing = [
+    !details.date ? 'the date' : null,
+    !details.place ? 'the place' : null,
+    !details.suspect?.handles?.length && !details.suspect?.urls?.length ? 'the account used' : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10 sm:py-14">
@@ -213,6 +260,180 @@ export function Intake({
                     <option value="CA">Canada</option>
                   </select>
                 </label>
+              </div>
+            )}
+          </div>
+
+          {/* ------------------------------------------- the official record */}
+          <div className="mt-6 rounded-3xl border border-white/70 bg-white/95 p-5 shadow-lift sm:max-w-3xl sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[15px] font-extrabold tracking-tight text-ink">
+                  Details for the official record
+                </h2>
+                <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-muted">
+                  These are the particulars a police station or a bank asks for first. We print them into the case file you
+                  hand over. Fill in what you know - anything left blank is printed as &ldquo;not stated&rdquo;, and you can
+                  add it later.
+                </p>
+              </div>
+              <button type="button" className="btn-quiet" onClick={() => setShowRecord((v) => !v)}>
+                {showRecord ? 'Hide' : 'Fill in'}
+              </button>
+            </div>
+
+            {showRecord && (
+              <div className="mt-5 space-y-5 border-t border-ink/10 pt-5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted">Date of the incident</span>
+                    <input
+                      type="date"
+                      className="input !py-2.5 !text-sm"
+                      value={details.date ?? ''}
+                      onChange={(e) => setDetails((d) => ({ ...d, date: e.target.value }))}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted">Time of the incident</span>
+                    <input
+                      type="time"
+                      className="input !py-2.5 !text-sm"
+                      value={details.time ?? ''}
+                      onChange={(e) => setDetails((d) => ({ ...d, time: e.target.value }))}
+                    />
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-muted">
+                    Where did it happen
+                  </span>
+                  <input
+                    className="input !py-2.5 !text-sm"
+                    placeholder="e.g. Flat 402, Nehru Nagar, New Delhi - or 'online, on Instagram'"
+                    value={details.place ?? ''}
+                    onChange={(e) => setDetails((d) => ({ ...d, place: e.target.value }))}
+                  />
+                </label>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted">How did it happen</span>
+                    <select
+                      className="input !py-2.5 !text-sm"
+                      value={details.mode ?? 'online'}
+                      onChange={(e) => setDetails((d) => ({ ...d, mode: e.target.value as IncidentDetails['mode'] }))}
+                    >
+                      <option value="online">Online</option>
+                      <option value="offline">In person</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted">
+                      Amount involved (if any)
+                    </span>
+                    <input
+                      className="input !py-2.5 !text-sm"
+                      placeholder="e.g. 20000"
+                      value={details.amount ?? ''}
+                      onChange={(e) => setDetails((d) => ({ ...d, amount: e.target.value }))}
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-2xl border border-ink/10 bg-canvas/70 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted">
+                    The account that did it
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-semibold text-muted">
+                        Username / handle
+                      </span>
+                      <input
+                        className="input !py-2.5 !text-sm"
+                        placeholder="e.g. rahul.finance.2024"
+                        value={details.suspect?.handles?.[0] ?? ''}
+                        onChange={(e) => handleText(e.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-xs font-semibold text-muted">Platform</span>
+                      <select
+                        className="input !py-2.5 !text-sm"
+                        value={details.suspect?.platform ?? ''}
+                        onChange={(e) => setSuspect({ platform: e.target.value })}
+                      >
+                        <option value="">Not sure / not stated</option>
+                        {PLATFORMS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-xs font-semibold text-muted">Link to the profile or post</span>
+                      <input
+                        className="input !py-2.5 !text-sm"
+                        placeholder="https://instagram.com/..."
+                        value={details.suspect?.urls?.[0] ?? ''}
+                        onChange={(e) => setSuspect({ urls: e.target.value ? [e.target.value] : [] })}
+                      />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-xs font-semibold text-muted">
+                        Any other identifier (phone, email, UPI, account number)
+                      </span>
+                      <input
+                        className="input !py-2.5 !text-sm"
+                        value={details.suspect?.identifiers ?? ''}
+                        onChange={(e) => setSuspect({ identifiers: e.target.value })}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-muted">How often has it happened</span>
+                    <input
+                      className="input !py-2.5 !text-sm"
+                      placeholder="e.g. daily, since March, 3 times so far"
+                      value={details.frequency ?? ''}
+                      onChange={(e) => setDetails((d) => ({ ...d, frequency: e.target.value }))}
+                    />
+                  </label>
+                  <label className="flex items-end gap-2 pb-1">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-coral-500"
+                      checked={Boolean(details.ongoing)}
+                      onChange={(e) => setDetails((d) => ({ ...d, ongoing: e.target.checked }))}
+                    />
+                    <span className="text-[13px] text-ink">It is still going on</span>
+                  </label>
+                </div>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-muted">
+                    Anything else we should put on record
+                  </span>
+                  <textarea
+                    className="input min-h-[90px] resize-y !text-sm"
+                    placeholder="Anything a police station would ask you that is not above."
+                    value={details.additional ?? ''}
+                    onChange={(e) => setDetails((d) => ({ ...d, additional: e.target.value }))}
+                  />
+                </label>
+
+                {missing.length > 0 && (
+                  <p className="rounded-2xl border border-butter-300 bg-butter-50 px-4 py-2.5 text-[12.5px] text-[#7A5C0B]">
+                    Still to fill in: {missing.join(', ')}. A police station will ask for these.
+                  </p>
+                )}
               </div>
             )}
           </div>

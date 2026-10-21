@@ -1,14 +1,25 @@
 import { createReadStream, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { INCIDENT_TYPES, PLATFORM_CHANNELS, AUTHORITY_CHANNELS, PROTECTION_CHANNELS, EMERGENCY_BY_COUNTRY, triage, type CaseFile } from '@reclaim/core';
+import {
+  INCIDENT_TYPES,
+  PLATFORM_CHANNELS,
+  AUTHORITY_CHANNELS,
+  PROTECTION_CHANNELS,
+  EMERGENCY_BY_COUNTRY,
+  triage,
+  type CaseFile,
+  type IncidentDetails,
+} from '@reclaim/core';
 import { bus, type CaseEvent } from './bus.js';
 import { config, hasPublicTunnel, hasTinyFish } from './env.js';
 import { getCase, listCases, deleteCase } from './store.js';
 import * as orch from './pipeline/orchestrator.js';
 import { renderCaseFile } from './casereport/pdf.js';
+import { dropFile, getFile, putFile } from './casereport/uploads.js';
 import * as tf from './tinyfish/client.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -23,13 +34,39 @@ const profileSchema = z
     phone: z.string().optional(),
     address: z.string().optional(),
     city: z.string().optional(),
+    state: z.string().optional(),
+    idType: z.string().optional(),
+    idNumber: z.string().optional(),
   })
   .default({});
+
+/** The particulars of the incident, as the reporter stated them. */
+const detailsSchema = z.object({
+  date: z.string().optional(),
+  time: z.string().optional(),
+  place: z.string().optional(),
+  mode: z.enum(['online', 'offline', 'both']).optional(),
+  ongoing: z.boolean().optional(),
+  amount: z.string().optional(),
+  frequency: z.string().optional(),
+  description: z.string().optional(),
+  additional: z.string().optional(),
+  suspect: z
+    .object({
+      handles: z.array(z.string()).optional(),
+      platform: z.string().optional(),
+      urls: z.array(z.string()).optional(),
+      identifiers: z.string().optional(),
+      description: z.string().optional(),
+    })
+    .optional(),
+});
 
 const createCaseSchema = z.object({
   text: z.string().min(8, 'Tell us a little more so we can triage it.'),
   profile: profileSchema,
   country: z.string().length(2).optional(),
+  details: detailsSchema.optional(),
 });
 
 function sse(reply: FastifyReply) {
@@ -120,6 +157,8 @@ export async function registerRoutes(app: FastifyInstance) {
     // deployment.
     const keep = process.env.RECLAIM_PERSIST === '1';
     const caseFile = orch.createCase(body.text, body.profile, body.country ?? config.country, keep);
+    // What the person filled in on the form wins over what we guessed.
+    if (body.details) orch.updateIncidentDetails(caseFile.id, body.details, caseFile);
     reply.code(201);
     return caseFile;
   });
@@ -347,11 +386,95 @@ export async function registerRoutes(app: FastifyInstance) {
         phone: z.string().optional(),
         address: z.string().optional(),
         city: z.string().optional(),
+        state: z.string().optional(),
+        idType: z.string().optional(),
+        idNumber: z.string().optional(),
+        details: detailsSchema.optional(),
         case: z.any().optional(),
       })
       .parse(request.body ?? {});
-    const { case: _case, ...profile } = body;
-    return { caseFile: orch.updateDetails(id, profile, body.case) };
+    const { case: _case, details, ...profile } = body;
+    let caseFile = orch.resolveCaseFor(id, body.case);
+    if (Object.keys(profile).length) caseFile = orch.updateDetails(id, profile, caseFile);
+    if (details) caseFile = orch.updateIncidentDetails(id, details, caseFile);
+    return { caseFile };
+  });
+
+  /* ------------------------------------------------------- evidence files */
+  /**
+   * The reporter attaches a file to the case: a screenshot, a video, a
+   * receipt. The bytes are hashed and kept; the case carries the hash.
+   */
+  app.post('/api/cases/:id/evidence', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const fields: Record<string, string> = {};
+    let upload: { name: string; type: string; data: Buffer } | null = null;
+
+    for await (const part of request.parts()) {
+      if (part.type === 'file') {
+        const data = await part.toBuffer();
+        upload = { name: part.filename || 'evidence', type: part.mimetype || 'application/octet-stream', data };
+      } else {
+        fields[part.fieldname] = String(part.value ?? '');
+      }
+    }
+
+    if (!upload) {
+      reply.code(400);
+      return reply.send({ error: 'no file was received' });
+    }
+    if (!upload.data.length) {
+      reply.code(400);
+      return reply.send({ error: 'the file was empty' });
+    }
+
+    // The case travels with the request, because on a serverless platform
+    // this instance may never have seen the report before.
+    const provided = fields.case ? (JSON.parse(fields.case) as CaseFile) : undefined;
+    const caseFile = orch.resolveCaseFor(id, provided);
+
+    const stored = putFile(upload.name, upload.type, upload.data);
+    const record = {
+      id: randomUUID(),
+      name: upload.name,
+      type: upload.type,
+      size: stored.size,
+      hash: stored.hash,
+      description: (fields.description ?? '').trim(),
+      capturedAt: (fields.capturedAt ?? '').trim() || undefined,
+      uploadedAt: new Date().toISOString(),
+      url: `/api/cases/${id}/evidence/${stored.hash.slice(0, 12)}`,
+    };
+    const updated = orch.attachUpload(id, record, caseFile);
+    return { caseFile: updated, upload: record };
+  });
+
+  /** The bytes of a file the reporter attached. */
+  app.get('/api/cases/:id/evidence/:token', async (request, reply) => {
+    const { id, token } = request.params as { id: string; token: string };
+    const caseFile = getCase(id);
+    const upload = (caseFile?.uploads ?? []).find((u) => u.url?.endsWith(token));
+    const file = upload ? getFile(upload.hash) : undefined;
+    if (!upload || !file) {
+      reply.code(404);
+      return reply.send({ error: 'file not found' });
+    }
+    reply.header('Content-Type', file.type || 'application/octet-stream');
+    reply.header('Content-Disposition', `inline; filename="${file.name}"`);
+    return reply.send(file.data);
+  });
+
+  /** A file is withdrawn from the annexures. */
+  app.post('/api/cases/:id/evidence/withdraw', async (request) => {
+    const { id } = request.params as { id: string };
+    const body = z
+      .object({ uploadId: z.string(), case: z.any().optional() })
+      .parse(request.body ?? {});
+    const caseFile = orch.resolveCaseFor(id, body.case);
+    const updated = orch.withdrawUpload(id, body.uploadId, caseFile);
+    const withdrawn = (updated.uploads ?? []).find((u) => u.id === body.uploadId);
+    if (withdrawn) dropFile(withdrawn.hash);
+    return { caseFile: updated };
   });
 
   /* ---------------------------------------------------------- edit fields */
@@ -482,21 +605,15 @@ export async function registerRoutes(app: FastifyInstance) {
   app.post('/api/action', async (request, reply) => {
     const body = z
       .object({
-        action: z.enum(['discover', 'analyse', 'file', 'monitors', 'details', 'fields', 'skip']),
+        action: z.enum(['discover', 'analyse', 'file', 'monitors', 'details', 'fields', 'skip', 'withdraw']),
         id: z.string(),
         channelId: z.string().optional(),
         sandbox: z.boolean().optional(),
         submit: z.boolean().optional(),
         values: z.record(z.string(), z.string()).optional(),
-        profile: z
-          .object({
-            name: z.string().optional(),
-            email: z.string().optional(),
-            phone: z.string().optional(),
-            address: z.string().optional(),
-            city: z.string().optional(),
-          })
-          .optional(),
+        uploadId: z.string().optional(),
+        profile: profileSchema.optional(),
+        details: detailsSchema.optional(),
         case: z.any().optional(),
       })
       .parse(request.body ?? {});
@@ -528,16 +645,28 @@ export async function registerRoutes(app: FastifyInstance) {
         case 'monitors':
           updated = await orch.armMonitors(id, Boolean(body.sandbox), body.case);
           break;
-        case 'details':
-          updated = orch.updateDetails(id, body.profile ?? {}, body.case);
+        case 'details': {
+          let working = orch.resolveCaseFor(id, body.case);
+          if (body.profile) working = orch.updateDetails(id, body.profile, working);
+          if (body.details) working = orch.updateIncidentDetails(id, body.details, working);
+          updated = working;
           break;
+        }
         case 'fields':
           orch.updateChannelFields(id, channelId!, body.values ?? {}, body.case);
           updated = orch.resolveCaseFor(id, body.case);
-          break;        case 'skip':
+          break;
+        case 'skip':
           orch.skipChannel(id, channelId!, body.case);
           updated = orch.resolveCaseFor(id, body.case);
           break;
+        case 'withdraw': {
+          const working = orch.resolveCaseFor(id, body.case);
+          updated = orch.withdrawUpload(id, body.uploadId!, working);
+          const withdrawn = (updated.uploads ?? []).find((u) => u.id === body.uploadId);
+          if (withdrawn) dropFile(withdrawn.hash);
+          break;
+        }
       }
       if (updated) send({ type: 'case', caseFile: updated });
     } catch (err) {

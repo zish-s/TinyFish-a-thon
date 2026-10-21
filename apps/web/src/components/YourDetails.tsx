@@ -52,10 +52,16 @@ export function YourDetails({
               ['email', 'Email', 'Either this or your mobile - one is enough'],
               ['phone', 'Mobile', 'Either this or your email - one is enough'],
               ['city', 'City', 'Picks your police station'],
+              ['state', 'State', 'Which state the police station is in'],
               ['address', 'Address', 'Only if a form asks for it'],
+              ['idType', 'ID type', 'e.g. Aadhaar, PAN, driving licence'],
+              ['idNumber', 'ID number', 'Only if a form asks for it'],
             ] as const
           ).map(([key, label, hint]) => (
-            <label key={key} className={`block ${key === 'address' ? 'sm:col-span-2' : ''}`}>
+            <label
+              key={key}
+              className={`block ${key === 'address' ? 'sm:col-span-2' : ''}`}
+            >
               <span className="mb-1.5 block text-xs font-semibold text-muted">{label}</span>
               <input
                 className="input !py-2.5 !text-sm"
