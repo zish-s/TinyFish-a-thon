@@ -8,11 +8,7 @@
 you need to file - on the right portals, with the right evidence, and with proof
 that you actually filed them.*
 
-![ReclaimYourNet - describe what happened](docs/screenshot-landing.png)
-
-[![KriticalHacks 2026](https://img.shields.io/badge/KriticalHacks_2026-AI%2FML%20track-14b8a6)](https://kritical-hacks.vercel.app/)
-[![TinyFish](https://img.shields.io/badge/built%20with-TinyFish-2dd4bf)](https://docs.tinyfish.ai/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-14b8a6)](LICENSE)
+![ReclaimYourNet - describe what happened](<img width="1000" height="500" alt="Screenshot 2026-10-21 171425" src="https://github.com/user-attachments/assets/9a76d89d-c89b-48ca-b6d4-99beb05b0d83" />)
 
 </div>
 
@@ -23,7 +19,7 @@ that you actually filed them.*
 Reporting online harm is a **bureaucratic job**, and victims are the worst
 equipped people in the world to do it.
 
-The hard part was never filling in a form. It is:
+You're scared and do not know where to go for help and nobody seems to have just the right answer, that is where ReclaimYourNet slides in!
 
 1. **Knowing where to file.** A platform report, a cybercrime portal complaint, a
    bank dispute and a police FIR are four different routes to four different
@@ -46,7 +42,7 @@ The hard part was never filling in a form. It is:
 
 ## The solution
 
-**ReclaimYourNet turns one description into a filed, evidenced, monitored case.**
+**ReclaimYourNet turns one description into a filed, evidenced, monitored case. It all runs locally so you wouldn't need to worry about any information getting uploaded to the cloud**
 
 | # | Stage | Who does it |
 | --- | --- | --- |
