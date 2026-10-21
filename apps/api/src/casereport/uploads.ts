@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { safeFileName, sniffType } from '@reclaim/core';
 import { config } from '../env.js';
 
 /**
@@ -19,7 +20,10 @@ import { config } from '../env.js';
 export interface StoredFile {
   hash: string;
   name: string;
+  /** The type the bytes actually are. */
   type: string;
+  /** The type the sender claimed, when it did not match. */
+  declaredType?: string;
   size: number;
   data: Buffer;
 }
@@ -35,10 +39,28 @@ export function sha256(data: Buffer): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
+/**
+ * What the bytes actually are.
+ *
+ * The Content-Type on an upload is a claim by whoever sent it, and any
+ * client can claim anything. The file is identified from its own magic
+ * bytes instead, so a file that says it is a PNG and is not one cannot
+ * masquerade as an image in the case file or in the browser.
+ */
+export { safeFileName, sniffType };
+
 /** Stores the bytes and returns the record of the file. */
 export function putFile(name: string, type: string, data: Buffer): StoredFile {
   const hash = sha256(data);
-  const file: StoredFile = { hash, name, type: type || 'application/octet-stream', size: data.length, data };
+  // The type is decided by the bytes, not by the sender's claim.
+  const sniffed = sniffType(data);
+  const file: StoredFile = {
+    hash,
+    name: safeFileName(name),
+    type: sniffed,
+    size: data.length,
+    data,
+  };
   files.set(hash, file);
   if (persist) {
     try {
@@ -48,6 +70,9 @@ export function putFile(name: string, type: string, data: Buffer): StoredFile {
       /* the memory copy is the one that matters */
     }
   }
+  // The claim is kept beside the truth: a file that says it is a PNG and is
+  // not one is worth writing down.
+  if (type && type !== sniffed) file.declaredType = type;
   return file;
 }
 

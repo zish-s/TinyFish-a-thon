@@ -106,7 +106,7 @@ export function renderCaseFile(caseFile: CaseFile, monitors: MonitorBinding[] = 
       .fontSize(8)
       .font('Helvetica')
       .text(
-        'This is a factual record prepared from the complainant\u2019s own account. It is meant to be printed and handed over to a police station, a cyber cell, a bank, a platform or a lawyer, alongside the original evidence.',
+        'This is a factual record prepared from the complainant\'s own account. It is meant to be printed and handed over to a police station, a cyber cell, a bank, a platform or a lawyer, alongside the original evidence.',
         MARGIN,
         doc.y,
         { width: width() },
@@ -175,7 +175,7 @@ export function renderCaseFile(caseFile: CaseFile, monitors: MonitorBinding[] = 
         .fontSize(8.5)
         .font('Helvetica')
         .text(
-          'No document has been attached by the complainant. The complainant states that the original device and the original files are available for examination.',
+          'No document is annexed with this case file. The complainant states that the original device and the original files are available for examination.',
           MARGIN,
           doc.y,
           { width: width() },
@@ -203,7 +203,9 @@ export function renderCaseFile(caseFile: CaseFile, monitors: MonitorBinding[] = 
       table(doc, cols, uploads.map((u, i) => [
         `A${i + 1}`,
         u.description || 'Not described',
-        `${u.name}\n${u.type || 'file'} - ${fileSize(u.size)}`,
+        `${u.name}\n${u.type || 'file'} - ${fileSize(u.size)}${
+          u.declaredType ? `\n(declared as ${u.declaredType})` : ''
+        }`,
         u.capturedAt ? formatCaseDate(u.capturedAt) : 'Not stated',
       ]));
       doc.moveDown(0.4);

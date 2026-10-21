@@ -19,7 +19,7 @@ import { config, hasPublicTunnel, hasTinyFish } from './env.js';
 import { getCase, listCases, deleteCase } from './store.js';
 import * as orch from './pipeline/orchestrator.js';
 import { renderCaseFile } from './casereport/pdf.js';
-import { dropFile, getFile, putFile } from './casereport/uploads.js';
+import { dropFile, getFile, putFile, safeFileName } from './casereport/uploads.js';
 import * as tf from './tinyfish/client.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -436,8 +436,9 @@ export async function registerRoutes(app: FastifyInstance) {
     const stored = putFile(upload.name, upload.type, upload.data);
     const record = {
       id: randomUUID(),
-      name: upload.name,
-      type: upload.type,
+      name: stored.name,
+      type: stored.type,
+      declaredType: stored.declaredType,
       size: stored.size,
       hash: stored.hash,
       description: (fields.description ?? '').trim(),
@@ -459,8 +460,13 @@ export async function registerRoutes(app: FastifyInstance) {
       reply.code(404);
       return reply.send({ error: 'file not found' });
     }
-    reply.header('Content-Type', file.type || 'application/octet-stream');
-    reply.header('Content-Disposition', `inline; filename="${file.name}"`);
+    // Only a real image is shown in the browser. Everything else is handed
+    // over as a download, so an uploaded file can never run as a page on
+    // this origin.
+    const inline = file.type.startsWith('image/');
+    reply.header('Content-Type', inline ? file.type : 'application/octet-stream');
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${safeFileName(file.name)}"`);
     return reply.send(file.data);
   });
 

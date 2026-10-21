@@ -60,7 +60,10 @@ ReclaimYourNet:
    agent's own summary of what it put in each field. You do not have to take
    it on trust, and you do not have to watch a browser to check.
 8. **Proves it** - every page read, every reference and every submission goes
-   into a SHA-256 hash chain you can export as a PDF case file.
+   into a SHA-256 hash chain, and the case file it exports is a document, not
+   a dashboard: your particulars, when and where it happened, the account
+   responsible, the screenshots you attach as annexures, every place it was
+   filed with its acknowledgement number, and a declaration to sign.
 9. **Follows up** - a monitor re-checks the reported URL every six hours and
    tells you whether the content actually came down.
 

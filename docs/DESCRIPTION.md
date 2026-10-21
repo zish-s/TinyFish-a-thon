@@ -44,6 +44,11 @@ ReclaimYourNet takes **one sentence** about what happened and does the rest.
    page read and every submission goes into a tamper-evident evidence chain you
    can export as a case file, and a monitor keeps checking whether the content
    actually came down.
+5. **You get a case file you can hand over.** A printable record in the shape
+   an office accepts: your particulars, when and where it happened, the account
+   responsible, every file you attach as an annexure, every place the complaint
+   has been filed with its reference number, and a declaration with a signature
+   block. Print it, sign it, give it to the police station.
 
 **What makes it different from a list of links**
 
@@ -56,6 +61,9 @@ ReclaimYourNet takes **one sentence** about what happened and does the rest.
   station, and a State Commission is a different body from the national one.
 - **It does not stop at filing.** A report is not a takedown, so the page keeps
   being checked.
+- **The output is a document, not a dashboard.** The case file is a record, not
+  a screenshot of a product: the complainant's own particulars, the evidence,
+  the acknowledgements, and a declaration to sign.
 - **It never stores your report.** No account, no database, no analytics. It
   lives in the tab and dies with it; the only copy that outlives the session is
   the PDF you download.

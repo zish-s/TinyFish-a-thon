@@ -8,5 +8,8 @@ dist/
 coverage/
 .vite/
 
+# scratch space for local checks
+.tmp-casefile/
+
 *.tsbuildinfo
 .vercel

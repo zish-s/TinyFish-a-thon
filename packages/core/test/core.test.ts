@@ -12,6 +12,7 @@ import {
   missingParticulars,
   statementText,
 } from '../src/casefile.js';
+import { safeFileName, sniffType } from '../src/evidence.js';
 import type { CaseFile } from '../src/types.js';
 
 const model = new IncidentClassifier(TRAINING_DATA);
@@ -158,5 +159,23 @@ describe('the printable case file', () => {
     expect(missing).toContain('the date of the incident');
     expect(missing).toContain('the place where it happened');
     expect(missing).toContain('the account or handle used');
+  });
+});
+
+describe('an uploaded file', () => {
+  it('is identified by its bytes, not by what the sender claims', () => {
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]);
+    expect(sniffType(png)).toBe('image/png');
+    expect(sniffType(Buffer.from('%PDF-1.7\n'))).toBe('application/pdf');
+    expect(sniffType(Buffer.from('a plain note about the case'))).toBe('text/plain');
+    // A file that says it is a PNG in its name, but is not one.
+    expect(sniffType(Buffer.from('<html><script>alert(1)</script></html>'))).toBe('text/plain');
+  });
+
+  it('gets a file name that is safe to put in a header', () => {
+    expect(safeFileName('my "shot".png')).toBe('my shot.png');
+    expect(safeFileName('../../etc/passwd')).toBe('.._.._etc_passwd');
+    expect(safeFileName('a\r\nX-Injected: 1')).toBe('aX-Injected_ 1');
+    expect(safeFileName('')).toBe('evidence');
   });
 });

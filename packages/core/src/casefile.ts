@@ -169,7 +169,13 @@ export function statementText(caseFile: CaseFile): string {
 
   const when = [formatCaseDate(details.date), details.time].filter(Boolean).join(' at ');
   const where = details.place?.trim();
-  const whereText = where ? (when ? ` on ${when} at ${where}` : ` at ${where}`) : when ? ` on ${when}` : '';
+  const whereText = where
+    ? when
+      ? ` on ${when}, at ${where}`
+      : ` at ${where}`
+    : when
+      ? ` on ${when}`
+      : '';
 
   const body =
     details.description?.trim() ||
@@ -218,7 +224,12 @@ export function statementText(caseFile: CaseFile): string {
   if (suspect.urls?.length) suspectParts.push(`(link: ${suspect.urls.join(' ; ')})`);
   if (suspect.identifiers) suspectParts.push(`- other identifiers: ${suspect.identifiers}`);
   if (suspectParts.length) {
-    parts.push(`The person or account responsible is ${suspectParts.join(' ')}.`);
+    // With no account named, the sentence is about where it happened, not
+    // about who did it.
+    const subject = suspect.handles?.length || suspect.urls?.length
+      ? 'The person or account responsible is'
+      : 'The incident took place';
+    parts.push(`${subject} ${suspectParts.join(' ')}.`);
   }
   if (suspect.description) parts.push(suspect.description);
 

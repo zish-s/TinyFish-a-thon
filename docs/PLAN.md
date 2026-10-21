@@ -118,7 +118,7 @@ watches for a **clone** of the impersonation account appearing somewhere new.
 | Live form read via TinyFish Agent + `output_schema` | Working - returned the real fields and dropdown options of the target form |
 | Agent form filling | Working - typed the approved values into the live form |
 | Agent submission + reference capture | Working - returned `IG-2026-486937` from the target form |
-| Evidence chain + PDF case file | Working - 8.7 KB PDF generated |
+| Evidence chain + PDF case file | Working - a printable complaint record (Part A to Part I plus annexures), with the evidence hash chain and the reporter's own annexures embedded |
 | Follow-up monitoring via TinyFish Monitor | Working - monitor created and active |
 | Live agent browser preview in the UI | Working - `streaming_url` embedded via SSE |
 | Vercel deployment | Configured (`vercel.json`, `api/[...path].ts`); storage degrades to in-memory on a read-only filesystem |

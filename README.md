@@ -189,11 +189,15 @@ One box: **"What happened?"** Type or dictate one sentence, press
 details" opens name / email / mobile / city, and the hint under each field says
 *either this or your mobile - one is enough*.
 
+<img src="docs/step-1-question-box.jpg" alt="The question box: one text field, with the details expanded" width="820" />
+
 ### 2. Triage and the urgency banner
 
 A local model labels the incident and the page says what that means in a
 sentence, not a score: *"Money was moved. A freeze is only realistically possible
 if reported within 24 hours."*
+
+<img src="docs/step-2-results-and-details.jpg" alt="The results page: urgency banner, practice mode note, and your details" width="820" />
 
 ### 3. "How this works"
 
@@ -212,12 +216,16 @@ marks as **required** need you. Contact fields are grouped - **"Email or mobile:
 either one is enough"** - and optional fields are labelled optional, so nobody
 fills them in.
 
+<img src="docs/step-3-required-fields.jpg" alt="The collapsible panel listing only the fields a form marks as required" width="820" />
+
 ### 6. The coverage map
 
 Every place it has to be reported, in numbered groups: remove it from the
 platform, create a legal record, stop the money, take it down before it spreads,
 shrink the blast radius. Each row has the reason it applies, the clock on it, the
 live link, and its own action.
+
+<img src="docs/step-4-coverage-map.jpg" alt="The coverage map: Instagram, Facebook, X, the cybercrime portal, local police and CERT-In" width="820" />
 
 ### 7. The agent
 
@@ -226,11 +234,15 @@ browser and returns the fields it has *today*. You watch it in the live
 preview, or open it full size. The agent then fills the form and stops before
 Submit.
 
+<img src="docs/step-5-agent-working.jpg" alt="The agent's own browser, live, with the step timeline and the run log" width="820" />
+
 ### 8. "Filled 3 of 3"
 
 You do not have to take it on trust. The card shows a green badge with the count
 and the agent's own summary, field by field. If something genuinely required is
 missing, the badge is amber and names it.
+
+<img src="docs/step-6-filled-badge.jpg" alt="The expanded channel: the exact values the agent typed, what the form asks for, and the actions" width="820" />
 
 ### 9. Your proof, and what we keep watching
 
@@ -238,6 +250,8 @@ A SHA-256 hash chain over every page read, every reference number and every
 submission, downloadable as a case-file PDF a bank or a police station will
 accept. Then a TinyFish Monitor re-checks the reported page every six hours -
 because a report is not the same as a takedown.
+
+<img src="docs/step-7-evidence.jpg" alt="The evidence vault: the hash chain, the case file download, and the takedown monitor" width="820" />
 
 **A timed 2m30s run with the script is in [`docs/DEMO.md`](docs/DEMO.md).**
 

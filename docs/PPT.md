@@ -75,7 +75,7 @@ organisations, no single place that would have told the victim to do all seven.
 | 5. Read | The same agent opens the real page and **reads the form it actually has today** - fields, labels, required flags, evidence requested | TinyFish Web Agent |
 | 6. Review | The victim sees every value that will be typed, with sensitive fields masked, and approves or edits | Victim |
 | 7. File | The agent types the approved values into the live form, stops before Submit, and submits only on a second explicit approval | TinyFish Web Agent |
-| 8. Prove | Every page read, every reference number and every submission is written into a SHA-256 hash chain and exported as a court/bank-ready case file | ReclaimYourNet |
+| 8. Prove | Every page read, every reference number and every submission is written into a SHA-256 hash chain and exported as a printable complaint record - complainant's particulars, when and where it happened, the account responsible, the reporter's own annexures, every filing with its acknowledgement number, and a declaration to sign | ReclaimYourNet |
 | 9. Follow up | TinyFish Monitors re-check the reported URL on a schedule and tell the victim whether the content actually came down - and escalate if it did not | TinyFish Monitor |
 
 **The design principle: nothing about the world is hard-coded.** The channel
@@ -193,7 +193,7 @@ agent really runs; only the target changes.
  API (Fastify 5, Node 20+, TypeScript)
    |- @reclaim/core      classifier, taxonomy, planner, redaction  (no network)
    |- pipeline           discover -> analyse -> review -> file -> monitor
-   |- evidence           SHA-256 hash chain + PDFKit case file
+   |- evidence           SHA-256 hash chain + the printable case file (PDFKit)
    |- store              in-memory only. A report is never written to disk.
    v
  TinyFish
@@ -241,8 +241,10 @@ agent really runs; only the target changes.
    the blank ones highlighted in yellow and fillable right there. Approve, then
    "Fill & submit". The agent types, stops, submits, and returns the reference
    number - which lands in the evidence vault with a hash.
-7. **02:20 - Proof and follow-up.** Download the case file PDF (incident
-   narrative, every channel and its reference number, the hash chain). Arm
+7. **02:20 - Proof and follow-up.** Download the case file (a printable
+   complaint record: the complainant's particulars, when and where it happened,
+   the account responsible, the screenshots attached as annexures, every channel
+   and its reference number, the hash chain, and a declaration to sign). Arm
    follow-up: a monitor now watches the reported URL.
 
 ---
@@ -387,11 +389,13 @@ packages/core/           triage engine: classifier, taxonomy, planner, redaction
   src/ml/dataset.ts      223 hand-labelled multi-label examples
   src/ml/redact.ts       privacy-by-default PII masking
   src/planner.ts         labels -> prioritised channels, deadlines, gaps
+  src/casefile.ts        the case file: particulars, statement, filing rows
   scripts/eval-classifier.ts   reproducible 5-fold evaluation
 apps/api/                Fastify API
   src/tinyfish/client.ts Search / Fetch / Agent(SSE) / Monitor / Wallet
   src/pipeline/orchestrator.ts discover -> analyse -> file -> monitor
-  src/casereport/pdf.ts  the case file PDF
+  src/casereport/pdf.ts  the printable case file (PDFKit)
+  src/casereport/uploads.ts  the reporter's own files, hashed
   demo-portals/          sandbox clones of real forms
 apps/web/                React + Vite + Tailwind client
 docs/                    this deck, the plan, the dev.to post

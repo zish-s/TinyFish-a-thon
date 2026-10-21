@@ -279,8 +279,10 @@ export interface UploadedEvidence {
   id: string;
   /** The file name as it was on the reporter's device. */
   name: string;
-  /** MIME type. */
+  /** The type the file actually is, decided from its bytes. */
   type: string;
+  /** The type the sender claimed, when it did not match the bytes. */
+  declaredType?: string;
   /** Size in bytes. */
   size: number;
   /** SHA-256 of the file bytes. */

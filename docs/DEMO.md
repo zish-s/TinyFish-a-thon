@@ -125,9 +125,11 @@ The reference number appears (e.g. `IG-2026-486937`).
 Scroll to **"Your proof, and what we keep watching"**.
 
 > "Every page it read, every reference it got, hashed and chained - so you can
-> prove what was filed and when. Downloadable as a case file a bank will
-> actually accept. And then we keep watching the page, because a report is not
-> the same as a takedown."
+> prove what was filed and when. And the case file is a document, not a
+> screenshot: your details, when and where it happened, the account that did
+> it, the screenshot you attach as an annexure, every place it was filed, and a
+> declaration you sign. A bank will actually accept it. And then we keep
+> watching the page, because a report is not the same as a takedown."
 
 ### 2:35 - Close (10 s)
 
@@ -142,7 +144,8 @@ Record these **before** the main run, so you can cut to them if the live run is 
 
 1. **The live agent browser** - a 10 s screen recording of the Agent Theatre
    with the browser visible. This is the single most convincing artefact.
-2. **The case file PDF** - open it, scroll the hash chain.
+2. **The case file PDF** - open it, scroll the hash chain, and show the
+   declaration and signature block at the end.
 3. **The evidence vault** - the two records with their hashes and the `prev`
    hash pointing at the previous one.
 4. **The monitor** - the follow-up panel with the live TinyFish monitor.
