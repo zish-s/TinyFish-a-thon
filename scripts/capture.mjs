@@ -115,13 +115,10 @@ const scrollTo = async (pattern, offset = 60) => {
  * The card is found by walking up from the heading to the first ancestor
  * that is actually big enough to be a card.
  */
-const scrollCardTo = async (pattern, top = 16) => {
+const scrollCardTo = async (pattern, top = 84) => {
   await page.evaluate(
     (p, t) => {
       document.documentElement.style.scrollBehavior = 'auto';
-      // The sticky header reserves scroll padding, which would push every
-      // shot down by the height of the header.
-      document.documentElement.style.scrollPaddingTop = '0px';
       const all = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
       const h = all.find((x) => new RegExp(p, 'i').test(x.textContent));
       if (!h) return;
@@ -141,6 +138,40 @@ const scrollCardTo = async (pattern, top = 16) => {
   await sleep(900);
 };
 
+/**
+ * Opens one channel in the coverage map and scrolls to it, so the shot shows
+ * the values the agent will type.
+ */
+const expandChannel = async (name) => {
+  const opened = await page.evaluate(
+    (n, t) => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      // The coverage map only - the same channel name also appears in the
+      // "fields you need to fill" panel further up the page.
+      const scope = document.querySelector('#report') ?? document;
+      const all = Array.from(scope.querySelectorAll('a, span, h3, h4, button'));
+      const el = all.find((x) => x.textContent.trim() === n);
+      if (!el) return false;
+      let card = el;
+      for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        if (String(p.className).includes('card')) {
+          card = p;
+          break;
+        }
+      }
+      const btn = Array.from(card.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Details');
+      if (btn) btn.click();
+      const y = card.getBoundingClientRect().top + window.scrollY - t;
+      window.scrollTo({ top: y, behavior: 'instant' });
+      return true;
+    },
+    name,
+    84,
+  );
+  if (!opened) console.log(`  !! channel not found: ${name}`);
+  await sleep(1100);
+};
+
 console.log('opening', URL);
 await page.goto(URL, { waitUntil: 'networkidle2', timeout: 60000 });
 await sleep(1500);
@@ -153,11 +184,11 @@ await save('step-1-question-box.jpg');
 // 2 - the particulars for the official record, on the same screen
 await clickText('Fill in', true);
 await sleep(600);
-await scrollCardTo('Details for the official record', 12);
+await scrollCardTo('Details for the official record', 84);
 await save('step-1b-official-record.jpg');
 
 // 3 - the app's own four-step guide, further down the first screen
-await scrollCardTo('How this works', 12);
+await scrollCardTo('How this works', 84);
 await save('step-1c-how-it-works.jpg');
 
 // 4 - start the report
@@ -171,25 +202,19 @@ await sleep(16000);
 await save('step-2-results-and-details.jpg');
 
 // 6 - the complainant's own details
-await scrollTo('Your details', 60);
+await scrollTo('Your details', 90);
 await save('step-2b-your-details.jpg');
 
 // 7 - the panel that only asks for what the form requires
-await scrollTo('the form needs from you|Only the fields');
+await scrollTo('the form needs from you|Only the fields', 90);
 await save('step-3-required-fields.jpg');
 
 // 8 - the coverage map
-await scrollTo('Remove it from the platform');
+await scrollTo('Remove it from the platform', 90);
 await save('step-4-coverage-map.jpg');
 
 // 9 - an expanded channel, showing the values the agent will type
-await clickText('Details', false);
-await sleep(800);
-await page.evaluate(() => {
-  const c = document.querySelector('a[href*="demo-portals/cybercrime"], a[href*="cybercrime.gov.in"]');
-  if (c) c.scrollIntoView({ block: 'center' });
-});
-await sleep(500);
+await expandChannel('National Cyber Crime Reporting Portal');
 await save('step-5-channel-values.jpg');
 
 // 10 - the agent working, with the live browser
@@ -207,18 +232,12 @@ if (process.env.SKIP_AGENT === '1') {
   if (filed) {
     await sleep(100000);
 
-    // the "filled 3 of 3" badge, on the expanded channel
-    await clickText('Details', true);
-    await sleep(900);
-    await page.evaluate(() => {
-      const badge = Array.from(document.querySelectorAll('div')).find((x) => /Filled \d+ of \d+/.test(x.textContent));
-      if (badge) badge.scrollIntoView({ block: 'center' });
-    });
-    await sleep(700);
+    // the channel the agent filled, with the badge and the values it wrote
+    await expandChannel('National Cyber Crime Reporting Portal');
     await save('step-6-filled-badge.jpg');
 
     // the case file, and the evidence the reporter attaches
-    await scrollTo('Your proof', 60);
+    await scrollTo('Your proof', 90);
     await save('step-7-evidence.jpg');
   }
 }
