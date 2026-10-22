@@ -31,6 +31,9 @@ export interface StoredFile {
 const files = new Map<string, StoredFile>();
 const persist = process.env.RECLAIM_PERSIST === '1';
 
+/** When each file's bytes arrived. The forget sweep works off this. */
+const arrivedAt = new Map<string, number>();
+
 function diskPath(hash: string): string {
   return path.join(config.dataDir, 'evidence', hash);
 }
@@ -62,6 +65,7 @@ export function putFile(name: string, type: string, data: Buffer): StoredFile {
     data,
   };
   files.set(hash, file);
+  arrivedAt.set(hash, Date.now());
   if (persist) {
     try {
       fs.mkdirSync(path.dirname(diskPath(hash)), { recursive: true });
@@ -79,7 +83,11 @@ export function putFile(name: string, type: string, data: Buffer): StoredFile {
 /** The bytes of a file, if this session still has them. */
 export function getFile(hash: string): StoredFile | undefined {
   const hit = files.get(hash);
-  if (hit) return hit;
+  if (hit) {
+    // Still wanted: a case being rebuilt into a PDF keeps its bytes alive.
+    arrivedAt.set(hash, Date.now());
+    return hit;
+  }
   if (persist) {
     try {
       const data = fs.readFileSync(diskPath(hash));
@@ -96,6 +104,7 @@ export function getFile(hash: string): StoredFile | undefined {
 /** Forgets a file's bytes. The hash stays in the case, on purpose. */
 export function dropFile(hash: string) {
   files.delete(hash);
+  arrivedAt.delete(hash);
   if (persist) {
     try {
       fs.rmSync(diskPath(hash), { force: true });
@@ -103,4 +112,28 @@ export function dropFile(hash: string) {
       /* nothing to clean up */
     }
   }
+}
+
+/**
+ * Bytes whose tab is gone go by the same rule as the case they belong to:
+ * the tab's forget signal drops them first, and if it never arrives, the
+ * sweep is the backstop. In persist mode the sweep does nothing - the whole
+ * point of persisting is to look at the data later.
+ */
+const forgetMinutesRaw = Number(process.env.RECLAIM_FORGET_MINUTES ?? 30);
+const FORGET_AFTER_MS =
+  (Number.isFinite(forgetMinutesRaw) && forgetMinutesRaw > 0 ? forgetMinutesRaw : 30) * 60_000;
+
+function sweepFiles(now = Date.now()) {
+  if (persist) return;
+  for (const [hash, at] of arrivedAt) {
+    if (now - at <= FORGET_AFTER_MS) continue;
+    arrivedAt.delete(hash);
+    files.delete(hash);
+  }
+}
+
+if (!persist) {
+  const timer = setInterval(() => sweepFiles(), 60_000);
+  timer.unref?.();
 }

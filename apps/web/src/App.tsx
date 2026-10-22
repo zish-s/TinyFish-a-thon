@@ -5,6 +5,7 @@ import { Intake } from './components/Intake';
 import { CoverageMap } from './components/CoverageMap';
 import { AgentTheatre } from './components/AgentTheatre';
 import { EvidenceVault } from './components/EvidenceVault';
+import { DevPanel } from './components/DevPanel';
 import { Pricing } from './components/Pricing';
 import { YourDetails } from './components/YourDetails';
 import { CaseDetails } from './components/CaseDetails';
@@ -26,6 +27,15 @@ export default function App() {
   useEffect(() => {
     api.health().then(setHealth).catch(() => undefined);
   }, []);
+
+  /** Leaving the page is the delete button: the server copy goes with it. */
+  useEffect(() => {
+    if (!caseFile) return;
+    const id = caseFile.id;
+    const forgot = () => api.deleteCase(id).catch(() => undefined);
+    window.addEventListener('pagehide', forgot);
+    return () => window.removeEventListener('pagehide', forgot);
+  }, [caseFile]);
 
   const handleEvent = useCallback((event: CaseEvent) => {
     if (event.type === 'case') {
@@ -122,6 +132,7 @@ export default function App() {
   };
 
   const reset = () => {
+    if (caseFile) api.deleteCase(caseFile.id).catch(() => undefined);
     setCaseFile(null);
     setSteps([]);
     setLogs([]);
@@ -159,6 +170,9 @@ export default function App() {
               </a>
               <a href="#evidence" className="hover:text-ink">
                 Evidence
+              </a>
+              <a href="#developers" className="hover:text-ink">
+                Developers
               </a>
               <a href="#plans" className="hover:text-ink">
                 Plans
@@ -351,6 +365,10 @@ export default function App() {
                 }}
                 armed={monitorsArmed}
               />
+            </section>
+
+            <section id="developers" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">
+              <DevPanel caseFile={caseFile} />
             </section>
 
             <section id="plans" className="mt-16 scroll-mt-24 border-t border-hair-8 pt-12">

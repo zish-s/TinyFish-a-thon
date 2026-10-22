@@ -108,7 +108,11 @@ export const api = {
     }).then((r) => json<CaseFile>(r)),
 
   deleteCase: (id: string) =>
-    fetch(`/api/cases/${id}`, { method: 'DELETE' }).then((r) => json<{ deleted: boolean }>(r)),
+    // `keepalive` lets the request survive the tab closing - this is the
+    // forget signal that fires the moment the page is hidden.
+    fetch(`/api/cases/${id}`, { method: 'DELETE', keepalive: true }).then((r) =>
+      json<{ deleted: boolean }>(r),
+    ),
 
   getCase: (id: string) => fetch(`/api/cases/${id}`).then((r) => json<{ caseFile: CaseFile; monitors: MonitorBinding[] }>(r)),
 

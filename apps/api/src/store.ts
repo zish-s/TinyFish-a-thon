@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { config } from './env.js';
+import { dropFile } from './casereport/uploads.js';
 import type { CaseFile, EvidenceItem, MonitorBinding } from '@reclaim/core';
 
 /**
@@ -92,6 +93,34 @@ const monitorCache = new Map<string, MonitorBinding[]>();
 /** Cases the person asked us never to keep. They live in memory only. */
 const ephemeral = new Set<string>();
 
+/**
+ * The tab is supposed to send a forget signal when the person leaves. That
+ * signal can fail to arrive - a dead network, a killed browser - so this is
+ * the backstop: an un-kept case nobody has touched for this long is pruned
+ * from memory. In persist mode (a developer-only local experiment) the sweep
+ * does nothing: the whole point of persisting is to keep the data around.
+ */
+const forgetMinutesRaw = Number(process.env.RECLAIM_FORGET_MINUTES ?? 30);
+const FORGET_AFTER_MS =
+  (Number.isFinite(forgetMinutesRaw) && forgetMinutesRaw > 0 ? forgetMinutesRaw : 30) * 60_000;
+const lastSeen = new Map<string, number>();
+
+function sweep(now = Date.now()) {
+  if (persist) return;
+  for (const [id, seen] of lastSeen) {
+    if (now - seen <= FORGET_AFTER_MS) continue;
+    lastSeen.delete(id);
+    cache.delete(id);
+    monitorCache.delete(id);
+    ephemeral.delete(id);
+  }
+}
+
+if (!persist) {
+  const timer = setInterval(() => sweep(), 60_000);
+  timer.unref?.();
+}
+
 export function insertCase(caseFile: CaseFile, keep: boolean) {
   const now = new Date().toISOString();
   if (!keep) ephemeral.add(caseFile.id);
@@ -109,12 +138,24 @@ export function insertCase(caseFile: CaseFile, keep: boolean) {
       JSON.stringify(caseFile),
     );
   cache.set(caseFile.id, caseFile);
+  lastSeen.set(caseFile.id, Date.now());
+  sweep();
 }
 
 export function deleteCase(id: string) {
+  // The uploaded bytes belong to the report too. Drop the ones only this
+  // case still references, then everything else that names it.
+  const ownedHashes = (cache.get(id)?.uploads ?? []).map((u) => u.hash).filter(Boolean);
   ephemeral.delete(id);
+  lastSeen.delete(id);
   cache.delete(id);
   monitorCache.delete(id);
+  const stillReferenced = new Set(
+    [...cache.values()].flatMap((c) => (c.uploads ?? []).map((u) => u.hash)),
+  );
+  for (const hash of ownedHashes) {
+    if (!stillReferenced.has(hash)) dropFile(hash);
+  }
   db?.prepare(`DELETE FROM cases WHERE id = ?`).run(id);
   db?.prepare(`DELETE FROM evidence WHERE case_id = ?`).run(id);
   db?.prepare(`DELETE FROM monitors WHERE case_id = ?`).run(id);
@@ -128,6 +169,7 @@ export function isEphemeral(id: string): boolean {
 /** Takes the client's copy of a case as the working copy for this instance. */
 export function adoptCase(caseFile: CaseFile) {
   cache.set(caseFile.id, caseFile);
+  lastSeen.set(caseFile.id, Date.now());
 }
 
 export function updateCase(caseFile: CaseFile) {
@@ -143,11 +185,16 @@ export function updateCase(caseFile: CaseFile) {
     );
   }
   cache.set(caseFile.id, caseFile);
+  lastSeen.set(caseFile.id, Date.now());
 }
 
 export function getCase(id: string): CaseFile | null {
+  sweep();
   const cached = cache.get(id);
-  if (cached) return cached;
+  if (cached) {
+    lastSeen.set(id, Date.now());
+    return cached;
+  }
   if (!db) return null;
   const row = db.prepare(`SELECT data FROM cases WHERE id = ?`).get(id) as { data: string } | undefined;
   if (!row) return null;

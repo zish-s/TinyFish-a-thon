@@ -42,7 +42,7 @@ You're scared and do not know where to go for help and nobody seems to have just
 
 ## The solution
 
-**ReclaimYourNet turns one description into a filed, evidenced, monitored case. It all runs locally so you wouldn't need to worry about any information getting uploaded to the cloud**
+**ReclaimYourNet turns one description into a filed, evidenced, monitored case. Triage runs on a small local classifier - no cloud AI - and nothing is stored: close the tab and the site forgets the report.**
 
 | # | Stage | Who does it |
 | --- | --- | --- |
@@ -72,19 +72,18 @@ are still missing.*
 
 ## TinyFish integration (the mandatory part)
 
-We use four TinyFish surfaces, each for a job a static implementation cannot do.
+We use three TinyFish surfaces, each for a job a static implementation cannot do.
 
 | Surface | Where | What it replaces |
 | --- | --- | --- |
 | **Search API** | `apps/api/src/pipeline/orchestrator.ts` &rarr; `discoverChannels()` | A hard-coded list of portal URLs that goes stale. At report time the agent asks the live web where the current official reporting page is, per country, and scores results for officialness (`.gov`, `.nic.in`, known platform domains). **Give it a city and the query becomes city-specific** - type *Gurugram* and the agent finds `gurgaon.haryanapolice.gov.in/cyber-crime` (the district's own cyber crime page) instead of a generic national portal. |
 | **Web Agent (SSE)** | `orchestrator.ts` &rarr; `analyseChannel()` / `fileChannel()` | A hard-coded form schema. The agent opens the real page and returns the **actual** fields, labels, required flags, dropdown options and evidence requests through `output_schema`; then types the approved values and submits. The `PROGRESS` and `STREAMING_URL` SSE events are streamed straight into the user's browser as a **live view of the agent working**. |
-| **Fetch API** | evidence capture | Downloading a page to attach to the case file. Also the substrate of the Page Monitor. |
-| **Monitor API** | `orchestrator.ts` &rarr; `armMonitors()` | "We filed it and hoped." A Page Monitor re-checks the reported URL every 6 hours; a Topic Monitor watches for a **clone** of the impersonation account appearing somewhere new. |
+| **Monitor API** | `orchestrator.ts` &rarr; `armMonitors()` | "We filed it and hoped." A Page Monitor - a TinyFish **fetch-type** monitor - re-checks the reported URL every 6 hours; a Topic Monitor (search-type) watches for a **clone** of the impersonation account appearing somewhere new. |
 
 **Where the agent is deliberately _not_ used:** triage and redaction of personal
 data. Those stay local, deterministic and auditable.
 
-**Cost discipline.** Search and Fetch are free within TinyFish's daily
+**Cost discipline.** Search is free within TinyFish's daily
 allowance; the Agent is metered per step ($0.016). ReclaimYourNet therefore reads each
 form once and caches the field spec, splits filing into "fill" and "submit" so
 a human approval sits between them, and never runs an agent the user did not
@@ -121,14 +120,17 @@ Two very different jobs, deliberately split.
   | Macro precision | 0.50 |
   | Macro recall | 0.83 |
   | Top-1 label correct | 89.7% |
+  | Exact label-set match | 14.8% |
 
   The numbers are honest and reproducible from the committed corpus. We
   over-predict labels on purpose: in this domain a **missed label means a missed
   reporting route**, and an extra channel is cheap while a missing one is not.
 
-* **Explainability is a feature.** The model stores a weight per token, so the
-  UI shows the exact words that drove each label (`money +2.1`, `scam +1.8`,
-  `photo +1.4`).
+* **Explainability is a feature, kept behind a door.** The model stores a signed
+  weight per token, and the case page's **For developers** panel shows every
+  label, its posterior and the exact words that drove it (`photo +5.01`,
+  `money +4.58`, `fake +2.11` on the demo sentence). The main flow never shows a
+  victim a token weight - it turns the model's output into a sentence.
 * **Hard-signal rules layer on top** - money lost, threat, minor involved,
   intimate content, identity exposed, account takeover - each with its own
   confidence floor, so a weak co-label never triggers a "call the police now"
@@ -159,7 +161,6 @@ parts an LLM cannot do and a hard-coded list does badly.
  TinyFish
    |- Search   live portal + helpline discovery
    |- Agent    read the live form, fill it, submit it  (SSE + output_schema)
-   |- Fetch    evidence snapshots
    |- Monitor  follow-up checks on the reported URL
 ```
 
@@ -205,7 +206,6 @@ stated*.
 
 Four plain steps, one click to open, so a first-time visitor always knows where
 they are.
-
 <img src="docs/step-1c-how-it-works.jpg" alt="The app's own four-step guide" width="620" />
 
 ### 4. Triage and the urgency banner
@@ -258,13 +258,14 @@ Submit.
 
 <img src="docs/step-5-agent-working.jpg" alt="The agent's own browser, live, with the step timeline and the run log" width="620" />
 
-### 10. "Filled 3 of 3"
+### 10. What the agent wrote, and what it will not guess
 
-You do not have to take it on trust. The card shows a green badge with the count
-and the agent's own summary, field by field. If something genuinely required is
-missing, the badge is amber and names it.
+Every value the agent typed is shown in the channel itself - the complainant's
+name, the mobile number, the address, the narrative it wrote from your story.
+The one field it could not fill is marked in amber and named, because the
+agent never guesses a required field on a government or bank form.
 
-<img src="docs/step-6-filled-badge.jpg" alt="The filled badge: how many fields the agent filled, and what it wrote" width="620" />
+<img src="docs/step-6-filled-badge.jpg" alt="The expanded channel: the values the agent filled, and the one field it flagged as needing you" width="620" />
 
 ### 11. Your case file, and what we keep watching
 
@@ -324,7 +325,7 @@ deployment is at **https://reclaim-your-net.vercel.app**.
 ### Other commands
 
 ```bash
-npm test        # 11 unit tests for the triage engine
+npm test        # 18 unit tests for the triage engine
 npm run eval    # reproducible 5-fold cross-validation of the classifier
 npm run build   # core -> api -> web
 npm start       # serve the built app from the API
@@ -407,16 +408,21 @@ disappears with it. Here is the complete list:
 | Your report | Nowhere. Not in a database, not on a server, not in the cloud. The only copy that outlives the session is the case file PDF you download. |
 | The details you approve | On the portal you approve, and nowhere else. That is the point of the product. |
 
-Closing the tab is the delete button. A developer-only `RECLAIM_PERSIST=1`
-environment variable turns on a local SQLite file for experimenting; it is off
-everywhere else, including on a deployment.
+Closing the tab is the delete button, and it is *wired*, not implied: the
+moment the page hides, the browser sends `DELETE /api/cases/:id` with
+`keepalive: true`, and the server drops its working copy of the report - the
+uploaded evidence bytes included. If that signal never arrives (a dead
+network, a killed browser), an in-memory sweep forgets everything anyway
+after `RECLAIM_FORGET_MINUTES`, 30 minutes by default. A developer-only
+`RECLAIM_PERSIST=1` environment variable turns on a local SQLite file for
+experimenting; it is off everywhere else, including on a deployment.
 
 ---
 
 ## Voice input, arranged around TinyFish
 
-TinyFish has no speech-to-text endpoint - its five surfaces (Agent, Research,
-Search, Fetch, Browser) are all about the web. But the **Agent can drive any
+TinyFish has no speech-to-text endpoint - its products (Agent, Research, Search,
+Fetch, Browser) are all about the web. But the **Agent can drive any
 website**, so voice input is arranged like this:
 
 ```
@@ -462,7 +468,6 @@ Free for victims, paid for the organisations that receive the reports.
 | Line | Cost |
 | --- | --- |
 | TinyFish Search | Rs 0 - free within the daily allowance (12,000/day) |
-| TinyFish Fetch | Rs 0 per URL - free within the daily allowance |
 | TinyFish Agent | Rs 1.35 per step |
 | TinyFish Monitor | Rs 0.42 per run (~Rs 12 a month for a daily check) |
 | **A full report** (read the form, fill it and submit it, on every channel) | **Rs 25-50** |
